@@ -9,6 +9,7 @@
         :root { --bg: #f8fafc; --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; -webkit-font-smoothing: antialiased; }
         
+        /* 헤더 */
         .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .logo-area { padding: 15px 16px 5px; }
         .logo-text { font-size: 24px; font-weight: 900; color: var(--mint); letter-spacing: -1px; display: flex; align-items: center; gap: 6px; }
@@ -17,18 +18,18 @@
         .summary-item { text-align: center; flex: 1; }
         .summary-item div { font-size: 11px; color: #64748b; margin-bottom: 2px; font-weight: bold; }
         .summary-item b { font-size: 22px; font-weight: 800; }
-        .summary-item b.danger { color: #ef4444; }
 
         .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fdfdfd; scrollbar-width: none; }
         .nav-tabs::-webkit-scrollbar { display: none; }
-        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; }
+        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; cursor: pointer; }
 
         .search-area { padding: 12px 16px 8px; background: #fff; }
-        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; font-size: 15px; background: #f1f5f9; }
+        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; font-size: 15px; background: #f1f5f9; outline: none; }
         
         .action-bar { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
         .action-bar button { flex: 1; padding: 12px; border-radius: 8px; border: none; color: #fff; font-weight: 800; font-size: 13px; cursor: pointer; }
 
+        /* 리스트 항목 */
         .cat-group { background: #fff; border-bottom: 1px solid var(--border); margin-top: 10px; }
         .cat-title { padding: 12px 16px; font-weight: 800; color: var(--deep-mint); border-bottom: 1px solid var(--border); font-size: 14px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -40,21 +41,21 @@
 
         .stock-num { font-weight: 800; font-size: 18px; text-align: center; width: 40px; }
         .adj-btns { display: flex; gap: 4px; justify-content: flex-end; }
-        .adj-btns button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; }
+        .adj-btns button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; cursor: pointer; }
 
-        #toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 30px; z-index: 2000; }
+        /* 비상 대기 화면 */
+        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .btn-retry { margin-top: 20px; padding: 15px 30px; background: var(--deep-mint); color: #fff; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; }
         
-        /* 로딩 에러 화면 */
-        #loading-overlay { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        .retry-btn { margin-top: 20px; padding: 15px 30px; background: var(--deep-mint); color: #fff; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 30px; z-index: 2000; }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">
-    <div style="font-size: 18px; font-weight: bold; color: #64748b;" id="loading-status">데이터를 동기화 중입니다...</div>
-    <div style="font-size: 13px; color: #94a3b8; margin-top: 10px;">3초 이상 소요될 경우 아래 버튼을 눌러주세요.</div>
-    <button class="retry-btn" onclick="forceReload()">강제 데이터 불러오기</button>
+<div id="loader">
+    <div id="loader-msg" style="font-size: 18px; font-weight: bold; color: #64748b;">데이터 연결 중...</div>
+    <div style="font-size: 13px; color: #94a3b8; margin-top: 10px;">로딩이 길어지면 버튼을 눌러주세요.</div>
+    <button class="btn-retry" onclick="reboot()">강제 재연결</button>
 </div>
 
 <div class="sticky-top">
@@ -80,87 +81,55 @@
 <div id="toast"></div>
 
 <script>
-    const API_BASE = 'https://script.google.com/macros/s/AKfycbxfNDa3brKAXAlc6HR86QGymPmLRNtb2TQts96TzXOPA_w3aeEWwWYJU0OtFmzqIQ/exec';
+    const URL = 'https://script.google.com/macros/s/AKfycbxfNDa3brKAXAlc6HR86QGymPmLRNtb2TQts96TzXOPA_w3aeEWwWYJU0OtFmzqIQ/exec';
     let inventory = [];
-    let categories = [];
 
-    function toNum(val) {
-        if (!val) return 0;
-        const n = parseInt(String(val).replace(/[^0-9-]/g, ''));
-        return isNaN(n) ? 0 : n;
-    }
-
-    // [중요] 구글 서버 차단을 피하기 위한 순수 JSONP 방식 지향 로직
     async function load() {
-        const statusEl = document.getElementById('loading-status');
         try {
-            // 주소 뒤에 완전히 새로운 랜덤 키를 붙여 캐시 우회
-            const url = `${API_BASE}?v=${new Date().getTime()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            const res = await fetch(url, {
-                method: 'GET',
-                mode: 'cors',
-                credentials: 'omit' // 보안 간섭 최소화
-            });
-
+            // 가장 표준적인 fetch 호출
+            const res = await fetch(URL);
             if(!res.ok) throw new Error();
             const data = await res.json();
             
             inventory = [];
-            let currentCat = "꽃액자";
-            
+            let cat = "꽃액자";
             data.forEach(row => {
-                const valA = String(row['바코드'] || row['제품명'] || '').trim();
-                if (valA.startsWith('[') && valA.endsWith(']')) {
-                    currentCat = valA.replace(/[\[\]]/g, '');
+                const val = String(row['바코드'] || row['제품명'] || '').trim();
+                if (val.startsWith('[') && val.endsWith(']')) {
+                    cat = val.replace(/[\[\]]/g, '');
                 } else if (row['제품명'] && row['바코드']) {
-                    row['__cat'] = currentCat;
-                    row['재고수량'] = toNum(row['재고수량'] || row['현재재고'] || 0);
+                    row['__cat'] = cat;
+                    row['재고수량'] = parseInt(String(row['재고수량'] || 0).replace(/[^0-9-]/g, '')) || 0;
                     inventory.push(row);
                 }
             });
 
-            categories = [...new Set(inventory.map(i => i['__cat']))];
             renderTabs();
             render();
             updateStats();
-            document.getElementById('loading-overlay').style.display = 'none';
+            document.getElementById('loader').style.display = 'none';
         } catch (e) {
-            statusEl.innerText = "연결이 지연되고 있습니다.";
-            statusEl.style.color = "#ef4444";
+            document.getElementById('loader-msg').innerText = "연결 실패. 재시도 해주세요.";
         }
     }
 
-    function forceReload() {
-        // 모든 브라우저 캐시를 무시하고 페이지 자체를 강제 리로드
-        window.location.href = window.location.pathname + "?refresh=" + Date.now();
-    }
-
-    function getStockStatus(cat, qty) {
-        qty = toNum(qty);
-        let normal = 50, danger = 30;
-        if (cat.includes('액자')) { normal = 10; danger = 5; }
-        else if (cat.includes('시계')) { normal = 10; danger = 7; }
-        else if (cat.includes('주보')) { normal = 15; danger = 10; }
-        else if (cat.includes('카드')) { normal = 200; danger = 150; }
-        if (qty >= normal) return { color: '#22c55e' };
-        if (qty < danger) return { color: '#ef4444', isDanger: true };
-        return { color: '#eab308' };
+    function reboot() {
+        // 브라우저 캐시를 무시하고 페이지를 완전히 새로 읽어옴
+        window.location.replace(window.location.pathname + '?r=' + Date.now());
     }
 
     function renderTabs() {
-        document.getElementById('nav-tabs').innerHTML = categories.map(c => 
+        const cats = [...new Set(inventory.map(i => i['__cat']))];
+        document.getElementById('nav-tabs').innerHTML = cats.map(c => 
             `<button class="tab-btn" onclick="goCat('${c}')">${c}</button>`
         ).join('');
     }
 
     function render() {
         const q = document.getElementById('search').value.toLowerCase();
-        const listDiv = document.getElementById('main-list');
         const filtered = inventory.filter(i => 
             String(i['제품명']).toLowerCase().includes(q) || String(i['바코드']).toLowerCase().includes(q)
         );
-
         const groups = filtered.reduce((acc, i) => {
             if(!acc[i['__cat']]) acc[i['__cat']] = [];
             acc[i['__cat']].push(i);
@@ -170,17 +139,18 @@
         let html = '';
         for(let cat in groups) {
             html += `<div class="cat-group" id="tag-${cat}"><div class="cat-title">🏷️ ${cat}</div><table>`;
-            html += groups[cat].map(i => {
-                const status = getStockStatus(cat, i['재고수량']);
+            htmlgroup = groups[cat].map(i => {
+                let dot = '#22c55e';
+                if(i['재고수량'] < 5) dot = '#ef4444';
                 return `<tr>
-                    <td style="width:10px; padding-right:0;"><span style="width:8px; height:8px; border-radius:50%; display:inline-block; background:${status.color}"></span></td>
+                    <td style="width:10px;"><span style="width:8px; height:8px; border-radius:50%; display:inline-block; background:${dot}"></span></td>
                     <td style="width: 70%;">
                         <div class="item-info">
                             <span class="barcode-label">${i['바코드']}</span>
                             <span class="product-name">${i['제품명']}</span>
                         </div>
                     </td>
-                    <td class="stock-num" style="color:${status.color}">${i['재고수량']}</td>
+                    <td class="stock-num">${i['재고수량']}</td>
                     <td>
                         <div class="adj-btns">
                             <button onclick="update('${i['바코드']}', -1)">-</button>
@@ -189,31 +159,27 @@
                     </td>
                 </tr>`;
             }).join('');
-            html += `</table></div>`;
+            html += htmlgroup + `</table></div>`;
         }
-        listDiv.innerHTML = html || '<div style="padding:80px 0; text-align:center;">결과 없음</div>';
+        document.getElementById('main-list').innerHTML = html || '<div style="padding:80px 0; text-align:center;">내역 없음</div>';
     }
 
-    async function update(id, amount) {
-        fetch(API_BASE, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount}]) });
+    async function update(id, amt) {
+        fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: amt}]) });
         const item = inventory.find(i => String(i['바코드']) === String(id));
         if(item) {
-            item['재고수량'] = toNum(item['재고수량']) + amount;
+            item['재고수량'] += amt;
             render(); updateStats();
             const t = document.getElementById('toast');
-            t.innerText = `${item['제품명']} 수정 완료`; t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 2000);
+            t.innerText = `변경 완료`; t.style.display = 'bold'; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 1500);
         }
     }
 
     function updateStats() {
-        const totalQty = inventory.reduce((s, i) => s + toNum(i['재고수량']), 0);
-        document.getElementById('st-q').innerText = totalQty.toLocaleString();
-        document.getElementById('st-d').innerText = inventory.filter(i => {
-            const s = getStockStatus(i['__cat'], i['재고수량']);
-            return s.isDanger;
-        }).length;
+        document.getElementById('st-q').innerText = inventory.reduce((s, i) => s + i['재고수량'], 0).toLocaleString();
         document.getElementById('st-k').innerText = inventory.length;
+        document.getElementById('st-d').innerText = inventory.filter(i => i['재고수량'] < 5).length;
     }
 
     function goCat(cat) {
@@ -221,7 +187,6 @@
         if(el) window.scrollTo({ top: el.offsetTop - 190, behavior: 'smooth' });
     }
 
-    // 페이지 진입 즉시 로드 실행
     window.onload = load;
 </script>
 </body>
