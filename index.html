@@ -3,80 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JOYFULHOUSE 재고 관리 시스템</title>
+    <title>JOYFULHOUSE 재고 관리</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root {
-            --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text-main: #1e293b; --text-muted: #64748b;
-            --primary-grad: linear-gradient(135deg, #6366f1, #4f46e5);
-            --green-grad: linear-gradient(135deg, #22c55e, #15803d);
-            --orange-grad: linear-gradient(135deg, #f97316, #c2410c);
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; padding-bottom: 120px; }
+        :root { --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --primary: #4f46e5; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; }
+        header { background: #fff; padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
         .container { max-width: 500px; margin: 0 auto; padding: 16px; }
-        header { background: #ffffff; border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top:0; z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .logo-icon { background: var(--primary-grad); border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; }
-        .brand-text-en { font-weight: 800; font-size: 20px; color: #4f46e5; }
-        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-        .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .stat-value { font-size: 22px; font-weight: 800; margin: 5px 0; }
-        .action-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-        .action-bar button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 14px; }
-        #search { width: 100%; padding: 12px 16px; border-radius: 10px; background: #ffffff; border: 1px solid var(--border); margin-bottom: 16px; box-sizing: border-box; outline: none; }
-        .tab-btn { flex-shrink: 0; background: #edf2f7; border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; color: var(--text-muted); cursor: pointer; font-size: 13px; margin-right: 6px; white-space: nowrap; }
-        .tab-btn.active { background: #4f46e5; color: white; border-color: transparent; }
-        .cat-section { margin-bottom: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-        .cat-header { padding: 14px 18px; background: #fdfdfd; border-bottom: 1px solid var(--border); font-weight: 800; }
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; }
+        .stat-val { font-size: 20px; font-weight: 800; color: var(--primary); }
+        .action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
+        .action-bar button { flex: 1; padding: 12px; border: none; border-radius: 10px; color: #fff; font-weight: bold; cursor: pointer; }
+        #search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px; box-sizing: border-box; }
+        .cat-section { background: #fff; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
+        .cat-header { padding: 12px 15px; background: #fdfdfd; border-bottom: 1px solid var(--border); font-weight: bold; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f8fafc; padding: 12px 10px; text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border); }
         td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
-        .row-btns button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-weight: bold; }
-        #log-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid var(--border); padding: 12px 16px; max-height: 100px; overflow-y: auto; z-index: 40; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #ffffff; border-radius: 20px; padding: 24px; width: 100%; max-width: 320px; }
-        .modal input { width: 100%; padding: 14px; margin: 8px 0 16px; border-radius: 10px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+        .row-btns button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
+        #log-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); padding: 10px 15px; max-height: 80px; overflow-y: auto; font-size: 11px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 20px; width: 80%; max-width: 300px; }
+        input[type="number"], input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="brand"><div class="logo-icon">🏠</div><div style="margin-left:10px"><div class="brand-text-en">JOYFULHOUSE</div></div></div>
-    <div id="current-date" style="font-size:12px; color:#64748b"></div>
+    <div style="font-weight: 900; color: #4f46e5; font-size: 18px;">🏠 JOYFULHOUSE</div>
+    <div id="current-date" style="font-size: 12px; color: #64748b;"></div>
 </header>
 
 <div class="container">
     <div class="stats-row">
-        <div class="stat-card"><div class="stat-value" id="stat-total-kind" style="color:#4f46e5">0</div><div style="font-size:11px">전체 품목</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-total-qty" style="color:#16a34a">0</div><div style="font-size:11px">총 재고</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-danger-count" style="color:#dc2626">0</div><div style="font-size:11px">위험 품목</div></div>
+        <div class="stat-card"><div id="stat-total-kind" class="stat-val">0</div><div style="font-size:10px">전체품목</div></div>
+        <div class="stat-card"><div id="stat-total-qty" class="stat-val" style="color:#16a34a">0</div><div style="font-size:10px">총재고</div></div>
+        <div class="stat-card"><div id="stat-danger-count" class="stat-val" style="color:#ef4444">0</div><div style="font-size:10px">위험품목</div></div>
     </div>
 
     <div class="action-bar">
-        <button style="background:var(--green-grad)" onclick="openModal('in')">⬇️ 입고</button>
-        <button style="background:var(--orange-grad)" onclick="openModal('out')">⬆️ 출고</button>
-        <button style="background:var(--primary-grad)" onclick="document.getElementById('excelFile').click()">📂 주문서</button>
-        <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="display:none" onchange="handleExcelUpload(event)">
+        <button style="background:#22c55e" onclick="openModal('in')">입고</button>
+        <button style="background:#f97316" onclick="openModal('out')">출고</button>
+        <button style="background:#6366f1" onclick="document.getElementById('excelFile').click()">주문서</button>
+        <input type="file" id="excelFile" style="display:none" onchange="handleExcelUpload(event)">
     </div>
 
-    <input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색..." onkeyup="render()">
-    <div id="tabs-row" style="display:flex; overflow-x:auto; padding-bottom:10px; margin-bottom:16px;"></div>
+    <input type="text" id="search" placeholder="상품명 또는 바코드 검색..." onkeyup="render()">
     <div id="inventory-list"></div>
 </div>
 
-<div id="log-panel"><div style="font-size:11px; font-weight:bold; margin-bottom:6px">📋 작업 로그</div><div id="log-content"></div></div>
+<div id="log-panel"><strong>📋 로그:</strong> <span id="log-content"></span></div>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modalTitle">재고 조정</h3>
-        <input type="text" id="modalBarcode" placeholder="바코드 입력/스캔">
-        <input type="number" id="modalQty" value="1" min="1">
-        <div style="display:flex; gap:10px"><button onclick="closeModal()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#f1f5f9">취소</button><button id="modalConfirmBtn" onclick="submitModalUpdate()" style="flex:1; padding:12px; border-radius:10px; border:none; color:white">확인</button></div>
+        <h3 id="modalTitle" style="margin:0">재고 조정</h3>
+        <input type="text" id="modalBarcode" placeholder="바코드 입력">
+        <input type="number" id="modalQty" value="1">
+        <div style="display:flex; gap:10px">
+            <button onclick="closeModal()" style="flex:1; padding:10px; border:none; border-radius:8px">취소</button>
+            <button id="modalConfirmBtn" onclick="submitModalUpdate()" style="flex:1; padding:10px; border:none; border-radius:8px; color:#fff">확인</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // ★본인의 구글 웹 앱 URL 주소 (반드시 확인!)
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyFERENdVdHrrFpyCz8uqzkzCv4etKfr4SuicCAo4V_0dOhkYKLQRWVVt4psADgBTbS/exec';
+    // ★사장님의 주소를 여기에 넣어주세요!
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxfNDa3brKAXAlc6HR86QGymPmLRNtb2TQts96TzXOPA_w3aeEWwWYJU0OtFmzqIQ/exec';
     
     let inventory = [];
     let activeMode = 'in';
@@ -84,16 +76,13 @@
     async function load() {
         try {
             const res = await fetch(API_URL);
-            const data = await res.json();
-            if (!data || data.length === 0) throw new Error("No Data");
-            inventory = data;
+            inventory = await res.json();
             updateStats();
-            renderTabs();
             render();
             document.getElementById('current-date').innerText = new Date().toLocaleDateString();
         } catch (e) {
-            document.getElementById('inventory-list').innerHTML = `<div style="text-align:center; padding:50px; color:red">데이터 로딩 중입니다. 잠시만 기다려주세요...</div>`;
-            setTimeout(load, 2000); // 실패 시 2초 후 다시 시도
+            document.getElementById('inventory-list').innerHTML = "연결 중...";
+            setTimeout(load, 2000);
         }
     }
 
@@ -103,68 +92,48 @@
         document.getElementById('stat-danger-count').innerText = inventory.filter(i => (Number(Object.values(i)[2])||0) < 5).length;
     }
 
-    function renderTabs() {
-        const cats = ['전체', ...new Set(inventory.map(i => i['품목'] || i['카테고리']).filter(Boolean))];
-        document.getElementById('tabs-row').innerHTML = cats.map(c => `<button class="tab-btn ${c==='전체'?'active':''}" onclick="filterCat(this, '${c}')">${c}</button>`).join('');
-    }
-
-    function render(filterCatName = '전체') {
+    function render() {
         const q = document.getElementById('search').value.toLowerCase();
-        let items = inventory.filter(i => {
-            const name = String(Object.values(i)[1] || '').toLowerCase();
-            const code = String(Object.values(i)[0] || '').toLowerCase();
-            return name.includes(q) || code.includes(q);
-        });
-        if(filterCatName !== '전체') items = items.filter(i => (i['품목'] || i['카테고리']) === filterCatName);
-
-        const groups = items.reduce((acc, i) => {
-            const cat = i['품목'] || i['카테고리'] || '기타';
-            if(!acc[cat]) acc[cat] = [];
-            acc[cat].push(i);
+        const groups = inventory.reduce((acc, i) => {
+            const vals = Object.values(i);
+            if (vals[1].toLowerCase().includes(q) || vals[0].toLowerCase().includes(q)) {
+                const cat = i['품목'] || i['카테고리'] || '기타';
+                if(!acc[cat]) acc[cat] = [];
+                acc[cat].push(i);
+            }
             return acc;
         }, {});
 
         let html = '';
         for(let cat in groups) {
-            html += `<div class="cat-section"><div class="cat-header">${cat} (${groups[cat].length})</div>
-                <table><thead><tr><th>제품명</th><th style="text-align:center">재고</th><th style="text-align:right">조정</th></tr></thead><tbody>
-                ${groups[cat].map(i => {
-                    const vals = Object.values(i);
-                    const qty = Number(vals[2]) || 0;
-                    return `<tr><td><div style="font-size:10px; color:#94a3b8">${vals[0]}</div>${vals[1]}</td>
-                        <td style="text-align:center; font-weight:bold; color:${qty<5?'#ef4444':'#10b981'}">${qty}</td>
-                        <td style="text-align:right" class="row-btns">
-                            <button onclick="quickUpdate('${vals[0]}', -1)" style="color:#dc2626">-</button>
-                            <button onclick="quickUpdate('${vals[0]}', 1)" style="color:#16a34a; margin-left:4px">+</button>
-                        </td></tr>`;
-                }).join('')}</tbody></table></div>`;
+            html += `<div class="cat-section"><div class="cat-header">${cat}</div><table>`;
+            html += groups[cat].map(i => {
+                const v = Object.values(i);
+                return `<tr><td><small style="color:#94a3b8">${v[0]}</small><br><b>${v[1]}</b></td>
+                    <td style="text-align:center; font-weight:bold">${v[2]}</td>
+                    <td style="text-align:right" class="row-btns">
+                        <button onclick="quickUpdate('${v[0]}', 1)">+</button>
+                    </td></tr>`;
+            }).join('');
+            html += `</table></div>`;
         }
-        document.getElementById('inventory-list').innerHTML = html || `<div style="text-align:center; padding:50px">데이터가 없습니다.</div>`;
+        document.getElementById('inventory-list').innerHTML = html;
     }
 
     async function quickUpdate(id, amount) {
         await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount}]) });
-        addLog(`바코드[${id}] ${amount>0?'+':''}${amount} 처리됨`, amount>0?'#16a34a':'#dc2626');
+        document.getElementById('log-content').innerText = id + " 처리 완료";
         load();
     }
 
-    function openModal(mode) { 
-        activeMode=mode; 
-        document.getElementById('modalTitle').innerText=mode==='in'?'⬇️ 입고 처리':'⬆️ 출고 처리'; 
-        document.getElementById('modalConfirmBtn').style.background=mode==='in'?'#22c55e':'#f97316'; 
-        document.getElementById('modal').style.display='flex'; 
-        document.getElementById('modalBarcode').focus(); 
-    }
+    function openModal(mode) { activeMode=mode; document.getElementById('modalTitle').innerText=mode==='in'?'입고':'출고'; document.getElementById('modalConfirmBtn').style.background=mode==='in'?'#22c55e':'#f97316'; document.getElementById('modal').style.display='flex'; }
     function closeModal() { document.getElementById('modal').style.display='none'; }
     async function submitModalUpdate() { 
         const id=document.getElementById('modalBarcode').value; 
         const qty=Number(document.getElementById('modalQty').value);
-        if(!id) return;
         await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: activeMode==='in'?qty:-qty}]) });
         closeModal(); load();
     }
-    function filterCat(btn, cat) { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); render(cat); }
-    function addLog(msg, color) { const c = document.getElementById('log-content'); c.innerHTML = `<div style="font-size:11px; border-left:2px solid ${color}; padding-left:8px; margin-bottom:4px">${msg}</div>` + c.innerHTML; }
 
     load();
 </script>
