@@ -7,179 +7,118 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            /* 라이트 모드 색상 체계 */
             --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text-main: #1e293b; --text-muted: #64748b;
             --primary-grad: linear-gradient(135deg, #6366f1, #4f46e5);
             --green-grad: linear-gradient(135deg, #22c55e, #15803d);
             --orange-grad: linear-gradient(135deg, #f97316, #c2410c);
-            --red: #ef4444; --yellow: #eab308; --green: #22c55e;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; padding-bottom: 120px; }
         .container { max-width: 500px; margin: 0 auto; padding: 16px; }
-        
-        /* 헤더 - 밝고 경쾌한 느낌 */
         header { background: #ffffff; border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top:0; z-index: 50; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .brand { display: flex; align-items: center; gap: 10px; }
         .logo-icon { background: var(--primary-grad); border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; }
-        .brand-text-en { font-family: sans-serif; font-weight: 800; font-size: 20px; color: #4f46e5; letter-spacing: 0.5px; }
-        .brand-text-ko { font-size: 11px; color: var(--text-muted); font-weight: 500; }
-        .date-badge { background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--text-muted); text-align: center; }
-
-        /* 통계 요약 카드 */
+        .brand-text-en { font-weight: 800; font-size: 20px; color: #4f46e5; }
         .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
         .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .stat-value { font-size: 24px; font-weight: 800; margin: 5px 0; }
-        .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-
-        /* 액션 버튼 */
+        .stat-value { font-size: 22px; font-weight: 800; margin: 5px 0; }
         .action-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-        .action-bar button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-in { background: var(--green-grad); }
-        .btn-out { background: var(--orange-grad); }
-        .btn-excel { background: var(--primary-grad); }
-        button:active { transform: translateY(2px); box-shadow: none; opacity: 0.9; }
-
-        /* 검색창 - 화이트 바탕 */
-        #search { width: 100%; padding: 12px 16px; border-radius: 10px; background: #ffffff; border: 1px solid var(--border); color: var(--text-main); margin-bottom: 16px; box-sizing: border-box; outline: none; font-size: 14px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03); }
-        #search:focus { border-color: #6366f1; background: #fff; }
-
-        /* 카테고리 탭 */
-        .tabs-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; }
-        .tab-btn { flex-shrink: 0; background: #edf2f7; border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; color: var(--text-muted); cursor: pointer; font-size: 13px; transition: 0.2s; white-space: nowrap; font-weight: 500; }
-        .tab-btn.active { background: #4f46e5; color: white; border-color: transparent; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); }
-
-        /* 카테고리 섹션 및 테이블 */
-        .cat-section { margin-bottom: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
-        .cat-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: #fdfdfd; border-bottom: 1px solid var(--border); }
-        .cat-name { font-weight: 800; font-size: 15px; color: #334155; }
-        .cat-count { background: #e2e8f0; border-radius: 20px; padding: 2px 8px; font-size: 11px; color: #475569; font-weight: bold; }
-        
+        .action-bar button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        #search { width: 100%; padding: 12px 16px; border-radius: 10px; background: #ffffff; border: 1px solid var(--border); margin-bottom: 16px; box-sizing: border-box; outline: none; }
+        .tab-btn { flex-shrink: 0; background: #edf2f7; border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; color: var(--text-muted); cursor: pointer; font-size: 13px; margin-right: 6px; white-space: nowrap; }
+        .tab-btn.active { background: #4f46e5; color: white; border-color: transparent; }
+        .cat-section { margin-bottom: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .cat-header { padding: 14px 18px; background: #fdfdfd; border-bottom: 1px solid var(--border); font-weight: 800; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f8fafc; padding: 12px 10px; text-align: left; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
-        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-        tr:hover td { background: #fdfdfd; }
-        
-        .stock-val { font-weight: 900; font-size: 16px; }
-        .row-btns { display: flex; gap: 6px; }
-        .row-btns button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-weight: bold; font-size: 16px; background: #fff; transition: 0.2s; }
-        .btn-row-plus { color: #16a34a; }
-        .btn-row-minus { color: #dc2626; }
-        .btn-row-plus:active { background: #f0fdf4; }
-        .btn-row-minus:active { background: #fef2f2; }
-
-        /* 하단 로그 패널 */
-        #log-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid var(--border); padding: 12px 16px; max-height: 100px; overflow-y: auto; z-index: 40; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
-        .log-entry { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; padding-left: 8px; border-left: 2px solid #e2e8f0; }
-
-        /* 모달 창 */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #ffffff; border-radius: 20px; padding: 24px; width: 100%; max-width: 320px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .modal input { width: 100%; padding: 14px; margin: 8px 0 16px; border-radius: 10px; border: 1px solid #cbd5e1; background: #f8fafc; color: var(--text-main); box-sizing: border-box; font-size: 16px; }
+        th { background: #f8fafc; padding: 12px 10px; text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
+        .row-btns button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-weight: bold; }
+        #log-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid var(--border); padding: 12px 16px; max-height: 100px; overflow-y: auto; z-index: 40; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #ffffff; border-radius: 20px; padding: 24px; width: 100%; max-width: 320px; }
+        .modal input { width: 100%; padding: 14px; margin: 8px 0 16px; border-radius: 10px; border: 1px solid #cbd5e1; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="brand">
-        <div class="logo-icon">🏠</div>
-        <div>
-            <div class="brand-text-en">JOYFULHOUSE</div>
-            <div class="brand-text-ko">재고 관리 시스템</div>
-        </div>
-    </div>
-    <div class="date-badge" id="current-date"></div>
+    <div class="brand"><div class="logo-icon">🏠</div><div style="margin-left:10px"><div class="brand-text-en">JOYFULHOUSE</div></div></div>
+    <div id="current-date" style="font-size:12px; color:#64748b"></div>
 </header>
 
 <div class="container">
     <div class="stats-row">
-        <div class="stat-card"><div style="font-size:18px">📦</div><div class="stat-value" id="stat-total-kind" style="color:#4f46e5">0</div><div class="stat-label">전체 품목</div></div>
-        <div class="stat-card"><div style="font-size:18px">📊</div><div class="stat-value" id="stat-total-qty" style="color:#16a34a">0</div><div class="stat-label">총 재고 수량</div></div>
-        <div class="stat-card"><div style="font-size:18px">⚠️</div><div class="stat-value" id="stat-danger-count" style="color:#dc2626">0</div><div class="stat-label">위험 품목</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-total-kind" style="color:#4f46e5">0</div><div style="font-size:11px">전체 품목</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-total-qty" style="color:#16a34a">0</div><div style="font-size:11px">총 재고</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-danger-count" style="color:#dc2626">0</div><div style="font-size:11px">위험 품목</div></div>
     </div>
 
     <div class="action-bar">
-        <button class="btn-in" onclick="openModal('in')">⬇️ 입고</button>
-        <button class="btn-out" onclick="openModal('out')">⬆️ 출고</button>
-        <button class="btn-excel" onclick="document.getElementById('excelFile').click()">📂 주문서</button>
+        <button style="background:var(--green-grad)" onclick="openModal('in')">⬇️ 입고</button>
+        <button style="background:var(--orange-grad)" onclick="openModal('out')">⬆️ 출고</button>
+        <button style="background:var(--primary-grad)" onclick="document.getElementById('excelFile').click()">📂 주문서</button>
         <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="display:none" onchange="handleExcelUpload(event)">
     </div>
 
-    <input type="text" id="search" placeholder="🔍 바코드 또는 제품명으로 찾기..." onkeyup="render()">
-    <div id="tabs-row" class="tabs-row"></div>
-
-    <div id="inventory-list">
-        <div style="text-align:center; padding:100px; color:#94a3b8;">데이터를 불러오는 중입니다...</div>
-    </div>
+    <input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색..." onkeyup="render()">
+    <div id="tabs-row" style="display:flex; overflow-x:auto; padding-bottom:10px; margin-bottom:16px;"></div>
+    <div id="inventory-list"></div>
 </div>
 
-<div id="log-panel">
-    <div style="font-size:11px; color:#1e293b; font-weight:800; margin-bottom:6px">📋 실시간 작업 로그</div>
-    <div id="log-content"></div>
-</div>
+<div id="log-panel"><div style="font-size:11px; font-weight:bold; margin-bottom:6px">📋 작업 로그</div><div id="log-content"></div></div>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modalTitle" style="margin:0 0 16px 0; color:#1e293b">재고 조정</h3>
-        <label style="font-size:12px; color:var(--text-muted); font-weight:bold">바코드 스캔/입력</label>
-        <input type="text" id="modalBarcode" placeholder="바코드를 입력하세요">
-        <label style="font-size:12px; color:var(--text-muted); font-weight:bold">수량</label>
+        <h3 id="modalTitle">재고 조정</h3>
+        <input type="text" id="modalBarcode" placeholder="바코드 입력/스캔">
         <input type="number" id="modalQty" value="1" min="1">
-        <div style="display:flex; gap:10px; margin-top:8px">
-            <button onclick="closeModal()" style="flex:1; padding:14px; background:#f1f5f9; border:none; color:#475569; border-radius:12px; font-weight:bold; cursor:pointer">취소</button>
-            <button id="modalConfirmBtn" onclick="submitModalUpdate()" style="flex:1; padding:14px; border:none; color:white; border-radius:12px; font-weight:bold; cursor:pointer">확인</button>
-        </div>
+        <div style="display:flex; gap:10px"><button onclick="closeModal()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#f1f5f9">취소</button><button id="modalConfirmBtn" onclick="submitModalUpdate()" style="flex:1; padding:12px; border-radius:10px; border:none; color:white">확인</button></div>
     </div>
 </div>
 
 <script>
-    // ★본인의 구글 웹 앱 URL로 반드시 교체하세요★
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxfNDa3brKAXAlc6HR86QGymPmLRNtb2TQts96TzXOPA_w3aeEWwWYJU0OtFmzqIQ/exec';
+    // ★본인의 구글 웹 앱 URL 주소 (반드시 확인!)
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyFERENdVdHrrFpyCz8uqzkzCv4etKfr4SuicCAo4V_0dOhkYKLQRWVVt4psADgBTbS/exec';
     
     let inventory = [];
     let activeMode = 'in';
-    const CAT_ICONS = { 꽃액자: "🌸", 말씀수지액자: "📖", 용품: "🛍", 기타: "📦" };
 
     async function load() {
         try {
             const res = await fetch(API_URL);
-            inventory = await res.json();
+            const data = await res.json();
+            if (!data || data.length === 0) throw new Error("No Data");
+            inventory = data;
             updateStats();
             renderTabs();
             render();
-            document.getElementById('current-date').innerText = new Date().toLocaleDateString('ko-KR');
+            document.getElementById('current-date').innerText = new Date().toLocaleDateString();
         } catch (e) {
-            document.getElementById('inventory-list').innerHTML = `<div style="text-align:center; padding:50px; color:red">로딩 오류! 인터넷 연결을 확인해 주세요.</div>`;
+            document.getElementById('inventory-list').innerHTML = `<div style="text-align:center; padding:50px; color:red">데이터 로딩 중입니다. 잠시만 기다려주세요...</div>`;
+            setTimeout(load, 2000); // 실패 시 2초 후 다시 시도
         }
     }
 
     function updateStats() {
-        const totalKind = inventory.length;
-        const totalQty = inventory.reduce((s, i) => s + (Number(i['재고수량']) || 0), 0);
-        const dangerCount = inventory.filter(i => (Number(i['재고수량'])||0) < 5).length;
-        
-        document.getElementById('stat-total-kind').innerText = totalKind.toLocaleString();
-        document.getElementById('stat-total-qty').innerText = totalQty.toLocaleString();
-        document.getElementById('stat-danger-count').innerText = dangerCount;
+        document.getElementById('stat-total-kind').innerText = inventory.length;
+        document.getElementById('stat-total-qty').innerText = inventory.reduce((s, i) => s + (Number(Object.values(i)[2]) || 0), 0);
+        document.getElementById('stat-danger-count').innerText = inventory.filter(i => (Number(Object.values(i)[2])||0) < 5).length;
     }
 
     function renderTabs() {
-        const cats = ['전체', ...new Set(inventory.map(i => i['품목']).filter(Boolean))];
-        document.getElementById('tabs-row').innerHTML = cats.map(c => 
-            `<button class="tab-btn ${c==='전체'?'active':''}" onclick="filterCat(this, '${c}')">${CAT_ICONS[c]||'📦'} ${c}</button>`
-        ).join('');
+        const cats = ['전체', ...new Set(inventory.map(i => i['품목'] || i['카테고리']).filter(Boolean))];
+        document.getElementById('tabs-row').innerHTML = cats.map(c => `<button class="tab-btn ${c==='전체'?'active':''}" onclick="filterCat(this, '${c}')">${c}</button>`).join('');
     }
 
     function render(filterCatName = '전체') {
         const q = document.getElementById('search').value.toLowerCase();
-        const listDiv = document.getElementById('inventory-list');
-        
-        let items = inventory.filter(i => 
-            (i['제품명']||'').toLowerCase().includes(q) || (i['바코드']||'').toString().toLowerCase().includes(q)
-        );
-        if(filterCatName !== '전체') items = items.filter(i => i['품목'] === filterCatName);
+        let items = inventory.filter(i => {
+            const name = String(Object.values(i)[1] || '').toLowerCase();
+            const code = String(Object.values(i)[0] || '').toLowerCase();
+            return name.includes(q) || code.includes(q);
+        });
+        if(filterCatName !== '전체') items = items.filter(i => (i['품목'] || i['카테고리']) === filterCatName);
 
         const groups = items.reduce((acc, i) => {
-            const cat = i['품목'] || '기타';
+            const cat = i['품목'] || i['카테고리'] || '기타';
             if(!acc[cat]) acc[cat] = [];
             acc[cat].push(i);
             return acc;
@@ -187,91 +126,47 @@
 
         let html = '';
         for(let cat in groups) {
-            html += `
-                <div class="cat-section">
-                    <div class="cat-header">
-                        <div style="display:flex; align-items:center; gap:8px">
-                            <span style="font-size:18px">${CAT_ICONS[cat]||'📦'}</span>
-                            <span class="cat-name">${cat}</span>
-                            <span class="cat-count">${groups[cat].length}</span>
-                        </div>
-                    </div>
-                    <table>
-                        <thead><tr><th>제품명</th><th style="text-align:center">재고</th><th style="text-align:right">조정</th></tr></thead>
-                        <tbody>
-                            ${groups[cat].map(i => `
-                                <tr>
-                                    <td><div style="font-size:11px; color:#94a3b8">${i['바코드']}</div>${i['제품명']}</td>
-                                    <td class="stock-val" style="text-align:center; color:${getSignalColor(i)}">${i['재고수량']}</td>
-                                    <td class="row-btns" style="justify-content:flex-end">
-                                        <button class="btn-row-minus" onclick="quickUpdate('${i['바코드']}', -1)">-</button>
-                                        <button class="btn-row-plus" onclick="quickUpdate('${i['바코드']}', 1)">+</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            html += `<div class="cat-section"><div class="cat-header">${cat} (${groups[cat].length})</div>
+                <table><thead><tr><th>제품명</th><th style="text-align:center">재고</th><th style="text-align:right">조정</th></tr></thead><tbody>
+                ${groups[cat].map(i => {
+                    const vals = Object.values(i);
+                    const qty = Number(vals[2]) || 0;
+                    return `<tr><td><div style="font-size:10px; color:#94a3b8">${vals[0]}</div>${vals[1]}</td>
+                        <td style="text-align:center; font-weight:bold; color:${qty<5?'#ef4444':'#10b981'}">${qty}</td>
+                        <td style="text-align:right" class="row-btns">
+                            <button onclick="quickUpdate('${vals[0]}', -1)" style="color:#dc2626">-</button>
+                            <button onclick="quickUpdate('${vals[0]}', 1)" style="color:#16a34a; margin-left:4px">+</button>
+                        </td></tr>`;
+                }).join('')}</tbody></table></div>`;
         }
-        listDiv.innerHTML = html || `<div style="text-align:center; padding:50px; color:var(--text-muted)">검색 결과가 없습니다.</div>`;
+        document.getElementById('inventory-list').innerHTML = html || `<div style="text-align:center; padding:50px">데이터가 없습니다.</div>`;
     }
 
     async function quickUpdate(id, amount) {
-        const target = inventory.find(i => i['바코드'] == id);
-        addLog(`${target['제품명']} ${amount>0?'입고':'출고'} (${amount})`, amount>0?'#16a34a':'#dc2626');
-        
-        // 구글 시트 반영 (API_URL에 POST 요청)
         await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount}]) });
-        
-        // 즉시 로컬 데이터 반영 (화면 새로고침 없이 숫자가 바뀌게)
-        target['재고수량'] = Number(target['재고수량']) + amount;
-        updateStats();
-        render(document.querySelector('.tab-btn.active').innerText.split(' ')[1] || '전체');
+        addLog(`바코드[${id}] ${amount>0?'+':''}${amount} 처리됨`, amount>0?'#16a34a':'#dc2626');
+        load();
     }
 
     function openModal(mode) { 
         activeMode=mode; 
         document.getElementById('modalTitle').innerText=mode==='in'?'⬇️ 입고 처리':'⬆️ 출고 처리'; 
-        document.getElementById('modalConfirmBtn').style.background=mode==='in'?'var(--green-grad)':'var(--orange-grad)'; 
+        document.getElementById('modalConfirmBtn').style.background=mode==='in'?'#22c55e':'#f97316'; 
         document.getElementById('modal').style.display='flex'; 
         document.getElementById('modalBarcode').focus(); 
     }
-    
-    function closeModal() { document.getElementById('modal').style.display='none'; document.getElementById('modalBarcode').value=''; }
-    
+    function closeModal() { document.getElementById('modal').style.display='none'; }
     async function submitModalUpdate() { 
         const id=document.getElementById('modalBarcode').value; 
-        const qty=Number(document.getElementById('modalQty').value); 
-        if(!id) return alert('바코드를 입력하세요');
-        const amount=activeMode==='in'?qty:-qty; 
-        await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount}]) }); 
-        addLog(`바코드[${id}] ${qty}개 ${activeMode==='in'?'입고':'출고'} 완료`, '#4f46e5');
-        closeModal(); 
-        setTimeout(load, 500); 
+        const qty=Number(document.getElementById('modalQty').value);
+        if(!id) return;
+        await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: activeMode==='in'?qty:-qty}]) });
+        closeModal(); load();
     }
-
-    function filterCat(btn, cat) { 
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); 
-        btn.classList.add('active'); 
-        render(cat); 
-    }
-
-    function getSignalColor(item) { 
-        const qty=Number(item['재고수량'])||0; 
-        if(qty < 5) return '#ef4444'; 
-        if(qty < 10) return '#f59e0b'; 
-        return '#10b981'; 
-    }
-
-    function addLog(msg, color) { 
-        const content = document.getElementById('log-content');
-        const time = new Date().toLocaleTimeString('ko-KR', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
-        content.innerHTML = `<div class="log-entry" style="border-left-color:${color}"><strong>[${time}]</strong> ${msg}</div>` + content.innerHTML; 
-    }
+    function filterCat(btn, cat) { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); render(cat); }
+    function addLog(msg, color) { const c = document.getElementById('log-content'); c.innerHTML = `<div style="font-size:11px; border-left:2px solid ${color}; padding-left:8px; margin-bottom:4px">${msg}</div>` + c.innerHTML; }
 
     load();
 </script>
-
 </body>
 </html>
