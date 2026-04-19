@@ -6,70 +6,59 @@
     <title>JOYFULHOUSE 재고 관리</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --primary: #4f46e5; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; }
-        header { background: #fff; padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
-        .container { max-width: 500px; margin: 0 auto; padding: 16px; }
-        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-        .stat-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; }
+        :root { --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --muted: #64748b; --primary: #4f46e5; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; }
+        header { background: #fff; padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
+        .stat-card { background: #fff; padding: 12px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
         .stat-val { font-size: 20px; font-weight: 800; color: var(--primary); }
-        .action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
-        .action-bar button { flex: 1; padding: 12px; border: none; border-radius: 10px; color: #fff; font-weight: bold; cursor: pointer; }
-        #search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px; box-sizing: border-box; }
-        .cat-section { background: #fff; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
-        .cat-header { padding: 12px 15px; background: #fdfdfd; border-bottom: 1px solid var(--border); font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
-        .row-btns button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
-        #log-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); padding: 10px 15px; max-height: 80px; overflow-y: auto; font-size: 11px; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .action-bar { display: flex; gap: 8px; padding: 0 15px 15px; }
+        .action-bar button { flex: 1; padding: 12px; border-radius: 8px; border: none; color: #fff; font-weight: bold; cursor: pointer; }
+        input#search { width: calc(100% - 30px); margin: 0 15px 15px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; }
+        .cat-section { background: #fff; border-top: 1px solid var(--border); margin-bottom: 10px; }
+        .cat-header { padding: 12px 15px; background: #fdfdfd; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .qty-box { font-weight: 800; text-align: center; width: 50px; }
+        .btns { display: flex; gap: 5px; justify-content: flex-end; }
+        .btns button { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-weight: bold; }
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: #fff; padding: 25px; border-radius: 20px; width: 80%; max-width: 300px; }
-        input[type="number"], input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <header>
-    <div style="font-weight: 900; color: #4f46e5; font-size: 18px;">🏠 JOYFULHOUSE</div>
-    <div id="current-date" style="font-size: 12px; color: #64748b;"></div>
+    <div style="font-weight:900; color:var(--primary)">🏠 JOYFULHOUSE</div>
+    <div id="date" style="font-size:12px; color:var(--muted)"></div>
 </header>
 
-<div class="container">
-    <div class="stats-row">
-        <div class="stat-card"><div id="stat-total-kind" class="stat-val">0</div><div style="font-size:10px">전체품목</div></div>
-        <div class="stat-card"><div id="stat-total-qty" class="stat-val" style="color:#16a34a">0</div><div style="font-size:10px">총재고</div></div>
-        <div class="stat-card"><div id="stat-danger-count" class="stat-val" style="color:#ef4444">0</div><div style="font-size:10px">위험품목</div></div>
-    </div>
-
-    <div class="action-bar">
-        <button style="background:#22c55e" onclick="openModal('in')">입고</button>
-        <button style="background:#f97316" onclick="openModal('out')">출고</button>
-        <button style="background:#6366f1" onclick="document.getElementById('excelFile').click()">주문서</button>
-        <input type="file" id="excelFile" style="display:none" onchange="handleExcelUpload(event)">
-    </div>
-
-    <input type="text" id="search" placeholder="상품명 또는 바코드 검색..." onkeyup="render()">
-    <div id="inventory-list"></div>
+<div class="stats">
+    <div class="stat-card"><div class="stat-val" id="total-kind">0</div><div style="font-size:10px">품목수</div></div>
+    <div class="stat-card"><div class="stat-val" id="total-qty" style="color:#16a34a">0</div><div style="font-size:10px">총재고</div></div>
+    <div class="stat-card"><div class="stat-val" id="danger-qty" style="color:#ef4444">0</div><div style="font-size:10px">부족품목</div></div>
 </div>
 
-<div id="log-panel"><strong>📋 로그:</strong> <span id="log-content"></span></div>
-
-<div id="modal" class="modal">
-    <div class="modal-content">
-        <h3 id="modalTitle" style="margin:0">재고 조정</h3>
-        <input type="text" id="modalBarcode" placeholder="바코드 입력">
-        <input type="number" id="modalQty" value="1">
-        <div style="display:flex; gap:10px">
-            <button onclick="closeModal()" style="flex:1; padding:10px; border:none; border-radius:8px">취소</button>
-            <button id="modalConfirmBtn" onclick="submitModalUpdate()" style="flex:1; padding:10px; border:none; border-radius:8px; color:#fff">확인</button>
-        </div>
-    </div>
+<div class="action-bar">
+    <button style="background:#22c55e" onclick="openM('in')">⬇️ 입고</button>
+    <button style="background:#f97316" onclick="openM('out')">⬆️ 출고</button>
 </div>
+
+<input type="text" id="search" placeholder="상품명 또는 바코드 검색..." onkeyup="render()">
+<div id="list">데이터 분석 중...</div>
+
+<div id="modal"><div class="modal-content">
+    <h3 id="m-title">재고 조정</h3>
+    <input type="text" id="m-barcode" placeholder="바코드" style="width:100%; padding:10px; margin-bottom:10px;">
+    <input type="number" id="m-qty" value="1" style="width:100%; padding:10px; margin-bottom:20px;">
+    <div style="display:flex; gap:10px">
+        <button onclick="closeM()" style="flex:1; padding:10px; border:none; border-radius:8px;">취소</button>
+        <button id="m-btn" onclick="submitM()" style="flex:1; padding:10px; border:none; border-radius:8px; color:#fff;">확인</button>
+    </div>
+</div></div>
 
 <script>
-    // ★사장님의 주소를 여기에 넣어주세요!
     const API_URL = 'https://script.google.com/macros/s/AKfycbxfNDa3brKAXAlc6HR86QGymPmLRNtb2TQts96TzXOPA_w3aeEWwWYJU0OtFmzqIQ/exec';
-    
     let inventory = [];
     let activeMode = 'in';
 
@@ -79,60 +68,91 @@
             inventory = await res.json();
             updateStats();
             render();
-            document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+            document.getElementById('date').innerText = new Date().toLocaleDateString();
         } catch (e) {
-            document.getElementById('inventory-list').innerHTML = "연결 중...";
-            setTimeout(load, 2000);
+            document.getElementById('list').innerHTML = "연결 실패! API 주소를 확인하세요.";
         }
     }
 
     function updateStats() {
-        document.getElementById('stat-total-kind').innerText = inventory.length;
-        document.getElementById('stat-total-qty').innerText = inventory.reduce((s, i) => s + (Number(Object.values(i)[2]) || 0), 0);
-        document.getElementById('stat-danger-count').innerText = inventory.filter(i => (Number(Object.values(i)[2])||0) < 5).length;
+        document.getElementById('total-kind').innerText = inventory.length;
+        const total = inventory.reduce((s, i) => s + (Number(i['재고수량'] || i['현재재고'] || i['수량'] || 0)), 0);
+        document.getElementById('total-qty').innerText = total.toLocaleString();
+        const danger = inventory.filter(i => (Number(i['재고수량'] || i['현재재고'] || i['수량'] || 0)) < 5).length;
+        document.getElementById('danger-qty').innerText = danger;
     }
 
     function render() {
         const q = document.getElementById('search').value.toLowerCase();
-        const groups = inventory.reduce((acc, i) => {
-            const vals = Object.values(i);
-            if (vals[1].toLowerCase().includes(q) || vals[0].toLowerCase().includes(q)) {
-                const cat = i['품목'] || i['카테고리'] || '기타';
-                if(!acc[cat]) acc[cat] = [];
-                acc[cat].push(i);
-            }
+        const listDiv = document.getElementById('list');
+        
+        // 열 이름을 자동으로 찾는 함수
+        const getVal = (item, keys) => {
+            for(let k of keys) { if(item[k] !== undefined) return item[k]; }
+            return '';
+        };
+
+        const filtered = inventory.filter(i => {
+            const name = String(getVal(i, ['제품명', '상품명', '이름'])).toLowerCase();
+            const code = String(getVal(i, ['바코드', 'ID', '품번'])).toLowerCase();
+            return name.includes(q) || code.includes(q);
+        });
+
+        const groups = filtered.reduce((acc, i) => {
+            const cat = getVal(i, ['품목', '카테고리', '분류']) || '기타';
+            if(!acc[cat]) acc[cat] = [];
+            acc[cat].push(i);
             return acc;
         }, {});
 
         let html = '';
         for(let cat in groups) {
-            html += `<div class="cat-section"><div class="cat-header">${cat}</div><table>`;
+            html += `<div class="cat-section"><div class="cat-header"><span>${cat}</span><span>${groups[cat].length}종</span></div><table>`;
             html += groups[cat].map(i => {
-                const v = Object.values(i);
-                return `<tr><td><small style="color:#94a3b8">${v[0]}</small><br><b>${v[1]}</b></td>
-                    <td style="text-align:center; font-weight:bold">${v[2]}</td>
-                    <td style="text-align:right" class="row-btns">
-                        <button onclick="quickUpdate('${v[0]}', 1)">+</button>
-                    </td></tr>`;
+                const name = getVal(i, ['제품명', '상품명', '이름']);
+                const code = getVal(i, ['바코드', 'ID', '품번']);
+                const qty = Number(getVal(i, ['재고수량', '현재재고', '수량'])) || 0;
+                return `<tr>
+                    <td><div style="font-size:10px; color:#94a3b8">${code}</div><b>${name}</b></td>
+                    <td class="qty-box" style="color:${qty < 5 ? '#ef4444' : '#10b981'}">${qty}</td>
+                    <td><div class="btns">
+                        <button onclick="update('${code}', -1)">-</button>
+                        <button onclick="update('${code}', 1)" style="color:blue">+</button>
+                    </div></td>
+                </tr>`;
             }).join('');
             html += `</table></div>`;
         }
-        document.getElementById('inventory-list').innerHTML = html;
+        listDiv.innerHTML = html || '<div style="text-align:center; padding:50px;">검색 결과 없음</div>';
     }
 
-    async function quickUpdate(id, amount) {
+    async function update(id, amount) {
         await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount}]) });
-        document.getElementById('log-content').innerText = id + " 처리 완료";
-        load();
+        // 화면 즉시 반영
+        const target = inventory.find(i => String(getVal(i, ['바코드', 'ID', '품번'])) === String(id));
+        if(target) {
+            const key = ['재고수량', '현재재고', '수량'].find(k => target[k] !== undefined) || '재고수량';
+            target[key] = (Number(target[key]) || 0) + amount;
+        }
+        updateStats();
+        render();
     }
 
-    function openModal(mode) { activeMode=mode; document.getElementById('modalTitle').innerText=mode==='in'?'입고':'출고'; document.getElementById('modalConfirmBtn').style.background=mode==='in'?'#22c55e':'#f97316'; document.getElementById('modal').style.display='flex'; }
-    function closeModal() { document.getElementById('modal').style.display='none'; }
-    async function submitModalUpdate() { 
-        const id=document.getElementById('modalBarcode').value; 
-        const qty=Number(document.getElementById('modalQty').value);
-        await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: activeMode==='in'?qty:-qty}]) });
-        closeModal(); load();
+    function openM(m) { activeMode=m; document.getElementById('m-title').innerText=m==='in'?'⬇️ 입고':'⬆️ 출고'; document.getElementById('m-btn').style.background=m==='in'?'#22c55e':'#f97316'; document.getElementById('modal').style.display='flex'; document.getElementById('m-barcode').focus(); }
+    function closeM() { document.getElementById('modal').style.display='none'; }
+    async function submitM() {
+        const id = document.getElementById('m-barcode').value;
+        const qty = Number(document.getElementById('m-qty').value);
+        if(!id) return;
+        await update(id, activeMode==='in' ? qty : -qty);
+        closeM();
+        document.getElementById('m-barcode').value = '';
+    }
+
+    // 헬퍼: 여러 키 중 값이 있는 것을 반환
+    function getVal(item, keys) {
+        for(let k of keys) { if(item[k] !== undefined) return item[k]; }
+        return '';
     }
 
     load();
