@@ -6,21 +6,21 @@
     <title>JOYFULHOUSE 재고관리</title>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --primary: #38bdf8; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
-        .header { margin-bottom: 24px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        #search { width: 100%; padding: 12px; border-radius: 8px; background: var(--card); border: 1px solid #334155; color: white; margin-bottom: 16px; box-sizing: border-box; }
-        .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #334155; }
+        .header { margin-bottom: 24px; border-bottom: 1px solid #334155; padding-bottom: 10px; text-align: center; }
+        #search { width: 100%; padding: 12px; border-radius: 8px; background: var(--card); border: 1px solid #334155; color: white; margin-bottom: 16px; box-sizing: border-box; font-size: 16px; }
+        .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #334155; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .info { display: flex; justify-content: space-between; align-items: center; }
-        .barcode { font-size: 11px; color: #94a3b8; }
-        .name { font-size: 15px; font-weight: 600; margin: 4px 0; }
-        .stock-val { font-size: 18px; font-weight: 800; color: var(--primary); }
-        .btns { display: flex; gap: 8px; margin-top: 12px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-minus { background: #ef4444; color: white; }
-        .btn-plus { background: #22c55e; color: white; }
-        button:active { transform: scale(0.95); opacity: 0.8; }
-        .loading { text-align: center; padding: 40px; color: #94a3b8; }
+        .barcode { font-size: 11px; color: #94a3b8; font-family: monospace; }
+        .name { font-size: 16px; font-weight: 600; margin: 4px 0; color: #e2e8f0; }
+        .stock-val { font-size: 20px; font-weight: 800; color: var(--primary); }
+        .btns { display: flex; gap: 10px; margin-top: 16px; }
+        button { flex: 1; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; color: white; }
+        .btn-minus { background: #ef4444; }
+        .btn-plus { background: #22c55e; }
+        button:active { transform: scale(0.96); opacity: 0.8; }
+        .loading { text-align: center; padding: 50px; color: #94a3b8; }
     </style>
 </head>
 <body>
@@ -31,10 +31,11 @@
     </div>
 
     <script>
-        // 사장님이 방금 배포하신 최신 주소입니다.
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxVfCAgtN3335bMwO8sbsguK19iP-K1xnQFJi2lyi44FEWQZkVNgBAcwtnHLRGM_fBy/exec';
+        // 사장님이 방금 새로 받으신 최신 주소로 적용했습니다.
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwrhREP0DkcezIafZfv4BEW2cVD24SfzUsPav9bTbdF7m-PCAOzlfn_nKvnTLKxWt4/exec';
         let inventory = [];
 
+        // 데이터 불러오기
         async function load() {
             try {
                 const res = await fetch(API_URL);
@@ -43,19 +44,26 @@
                 render(inventory);
             } catch (e) { 
                 console.error(e);
-                document.getElementById('list').innerHTML = "<b>데이터 로딩 실패</b><br><small>구글 시트의 '배포' 설정을 확인해주세요.</small>"; 
+                document.getElementById('list').innerHTML = 
+                    "<div style='text-align:center; padding:20px;'><b>⚠️ 데이터 로딩 실패</b><br><small>웹 앱 주소나 시트 권한을 확인해주세요.</small></div>"; 
             }
         }
 
+        // 화면에 상품 목록 그리기
         function render(items) {
             const listDiv = document.getElementById('list');
             listDiv.className = '';
-            // 시트 제목이 '재고수량' 혹은 '현재재고'인 경우를 모두 체크합니다.
+            
+            if (items.length === 0) {
+                listDiv.innerHTML = "<div class='loading'>검색 결과가 없습니다.</div>";
+                return;
+            }
+
             listDiv.innerHTML = items.map(item => `
                 <div class="card">
                     <div class="info">
                         <div>
-                            <div class="barcode">${item['바코드'] || 'No ID'}</div>
+                            <div class="barcode">${item['바코드'] || '---'}</div>
                             <div class="name">${item['제품명'] || '이름 없음'}</div>
                         </div>
                         <div class="stock-val" id="stock-${item['바코드']}">${item['재고수량'] !== undefined ? item['재고수량'] : (item['현재재고'] || 0)}</div>
@@ -68,28 +76,35 @@
             `).join('');
         }
 
+        // 재고 업데이트 함수
         async function update(id, amount) {
             const badge = document.getElementById(`stock-${id}`);
             const oldVal = badge.innerText;
-            badge.innerText = "⏳";
+            badge.innerText = "⏳"; // 업데이트 중 표시
+
             try {
-                await fetch(`${API_URL}?id=${id}&amount=${amount}`, { method: 'POST' });
-                // 구글 시트 반영 시간을 위해 0.5초 뒤에 새로고침
-                setTimeout(load, 500); 
+                // 구글 시트로 데이터 전송 (POST 요청)
+                await fetch(\`\${API_URL}?id=\${id}&amount=\${amount}\`, { method: 'POST' });
+                
+                // 전송 성공 후 시트 반영 시간을 고려해 0.6초 뒤에 다시 불러오기
+                setTimeout(load, 600); 
             } catch (e) { 
-                alert("업데이트 실패"); 
+                alert("재고 반영에 실패했습니다."); 
                 badge.innerText = oldVal; 
             }
         }
 
+        // 검색 필터 기능
         function filterItems() {
             const q = document.getElementById('search').value.toLowerCase();
-            render(inventory.filter(i => 
+            const filtered = inventory.filter(i => 
                 (i['제품명'] && i['제품명'].toLowerCase().includes(q)) || 
                 (i['바코드'] && String(i['바코드']).toLowerCase().includes(q))
-            ));
+            );
+            render(filtered);
         }
 
+        // 앱 시작 시 데이터 로드
         load();
     </script>
 </body>
