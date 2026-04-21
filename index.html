@@ -33,15 +33,15 @@
 <body>
 
 <div id="loader">
-    <div id="msg">데이터 동기화 중...</div>
-    <div id="sub-msg" style="font-size:12px; color:gray; margin-top:10px;"></div>
+    <div id="msg">데이터 연결 중...</div>
+    <button id="retry-btn" onclick="load()" style="display:none; margin-top:15px; padding:10px 20px; border-radius:8px; background:var(--mint); color:white; border:none; font-weight:bold;">수동으로 불러오기</button>
 </div>
 
 <div id="io-modal" class="modal">
     <div class="modal-content">
         <h3 id="modal-title" style="text-align:center;">재고 조정</h3>
-        <input type="text" id="modal-id" style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; border-radius:8px;" placeholder="바코드 입력">
-        <input type="number" id="modal-amt" style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; border-radius:8px;" placeholder="수량 입력">
+        <input type="text" id="modal-id" style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box;" placeholder="바코드 입력">
+        <input type="number" id="modal-amt" style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box;" placeholder="수량 입력">
         <div style="display:flex; gap:10px;">
             <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
             <button id="modal-submit" style="flex:1; padding:12px; border-radius:8px; border:none; background:var(--mint); color:white; font-weight:bold;">확인</button>
@@ -52,10 +52,11 @@
 <div id="file-modal" class="modal">
     <div class="modal-content">
         <h3 style="text-align:center;">주문서 업로드</h3>
-        <input type="file" id="excel-input" style="width:100%; margin-bottom:15px;" accept=".xlsx, .xls">
+        <p style="font-size:12px; color:gray; text-align:center;">A열: 바코드 / B열: 출고수량</p>
+        <input type="file" id="excel-input" style="width:100%; margin-bottom:15px;" accept=".xlsx, .xls, .csv">
         <div style="display:flex; gap:10px;">
             <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
-            <button onclick="handleExcel()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#6366f1; color:white; font-weight:bold;">파일 읽기</button>
+            <button onclick="handleExcel()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#6366f1; color:white; font-weight:bold;">엑셀 읽기</button>
         </div>
     </div>
 </div>
@@ -79,31 +80,33 @@
 <div id="list"></div>
 
 <script>
-    // ★ 새로 배포한 주소를 여기에 꼭 넣어주세요!
+    // ★ 사장님의 웹 앱 URL (배포 주소)을 여기에 꼭 넣어주세요!
     const URL = 'https://script.google.com/macros/s/AKfycbw_rPkIAJUHJ5Eh3ctQmz0sz7PBpyC5PTjOWr1Pi4caEhBT1th9PoGVfAvU_qyw7DJqMQ/exec'; 
 
     let inventory = [];
 
-    // [최종 로딩 로직] 보안을 뚫는 JSONP 방식
     function load() {
+        document.getElementById('msg').innerText = "데이터 요청 중...";
+        document.getElementById('retry-btn').style.display = 'none';
+        
         const script = document.createElement('script');
-        // 캐시를 방지하기 위해 랜덤 숫자(v)를 계속 바꿉니다.
         script.src = URL + "?callback=processData&v=" + new Date().getTime();
         document.body.appendChild(script);
-
-        // 7초 후에도 반응 없으면 강제 메시지
+        
+        // 5초 후에도 안 되면 수동 버튼 표시
         setTimeout(() => {
             if(inventory.length === 0) {
-                document.getElementById('sub-msg').innerText = "서버 응답이 늦어지고 있습니다. 새로고침을 시도하세요.";
+                document.getElementById('msg').innerText = "PC 보안 차단 확인됨";
+                document.getElementById('retry-btn').style.display = 'block';
             }
-        }, 7000);
+        }, 5000);
     }
 
     function processData(rows) {
         inventory = [];
         let currentCat = "기타";
         rows.forEach((row, i) => {
-            if(i === 0) return; // 헤더 제거
+            if(i === 0) return; 
             const val = String(row[0] || '').trim();
             if (val.startsWith('[') && val.endsWith(']')) {
                 currentCat = val.replace(/[\[\]]/g, '');
@@ -124,7 +127,7 @@
     function render(cat = null) {
         const q = document.getElementById('search').value.toLowerCase();
         let filtered = inventory;
-        if(q) filtered = inventory.filter(i => i.제품명.toLowerCase().includes(q) || i.바코드.includes(q));
+        if(q) filtered = inventory.filter(i => String(i.제품명).toLowerCase().includes(q) || String(i.바코드).includes(q));
         else if(cat) filtered = inventory.filter(i => i.__cat === cat);
         
         document.getElementById('list').innerHTML = filtered.map(i => `
@@ -138,32 +141,58 @@
             </div>`).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
     }
 
-    /* 주문서 기능 */
+    /* 엑셀 파일 읽기 (주문서 기능 핵심) */
     function openFileModal() { document.getElementById('file-modal').style.display = 'flex'; }
+    
     function handleExcel() {
-        const file = document.getElementById('excel-input').files[0];
-        if (!file) return;
+        const fileInput = document.getElementById('excel-input');
+        const file = fileInput.files[0];
+        if (!file) return alert("파일을 선택해주세요.");
+
         const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1});
-            let updates = [];
-            json.forEach((row, i) => {
-                if(i === 0 || !row[0]) return;
-                updates.push({id: String(row[0]).trim(), amount: -(parseInt(row[1]) || 0)});
-            });
-            if(confirm(`${updates.length}건을 일괄 출고할까요?`)) sendUpdate(updates);
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                // 엑셀 데이터를 배열로 변환
+                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                
+                let updates = [];
+                rows.forEach((row, index) => {
+                    if (index === 0) return; // 제목줄 스킵
+                    const barcode = String(row[0] || '').trim();
+                    const qty = parseInt(row[1]) || 0;
+                    if (barcode && qty !== 0) {
+                        updates.push({id: barcode, amount: -qty}); // 주문서이므로 '차감' 처리
+                    }
+                });
+
+                if (updates.length > 0) {
+                    if(confirm(`${updates.length}건의 데이터를 반영할까요?`)) {
+                        sendUpdate(updates);
+                        fileInput.value = ""; // 파일 초기화
+                    }
+                } else {
+                    alert("읽을 수 있는 데이터가 없습니다. (A열:바코드, B열:수량 확인)");
+                }
+            } catch (err) {
+                alert("엑셀 파일을 읽는 중 오류가 발생했습니다: " + err.message);
+            }
         };
         reader.readAsArrayBuffer(file);
     }
 
     async function sendUpdate(list) {
+        // 화면 재고 즉시 반영
         list.forEach(u => {
             const item = inventory.find(i => String(i.바코드).trim() === u.id);
             if(item) item.재고수량 += u.amount;
         });
         render(); updateStats(); closeModal();
+        
+        // 구글 시트 전송 (CORS 차단 방지용 no-cors)
         fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(list) });
     }
 
@@ -172,9 +201,9 @@
         document.getElementById('modal-id').value = "";
         document.getElementById('modal-amt').value = "";
         document.getElementById('modal-submit').onclick = () => {
-            const id = document.getElementById('modal-id').value;
+            const id = document.getElementById('modal-id').value.trim();
             const amt = parseInt(document.getElementById('modal-amt').value) * (type === '출고' ? -1 : 1);
-            if(id && amt) sendUpdate([{id: String(id).trim(), amount: amt}]);
+            if(id && amt) sendUpdate([{id: id, amount: amt}]);
         };
         document.getElementById('io-modal').style.display = 'flex';
     }
