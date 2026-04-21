@@ -40,9 +40,9 @@
 <body>
 
 <div id="loader">
-    <div id="loader-msg" style="font-size: 18px; font-weight: bold; color: #64748b;">신규 목록 반영 중...</div>
-    <div style="font-size: 13px; color: #94a3b8; margin-top: 10px;">변경사항이 안 보이면 아래 버튼을 눌러주세요.</div>
-    <button class="btn-retry" onclick="reboot()">강제 새로고침</button>
+    <div id="loader-msg" style="font-size: 18px; font-weight: bold; color: #64748b;">데이터 연결 중...</div>
+    <div style="font-size: 13px; color: #94a3b8; margin-top: 10px;">로딩이 길어지면 아래 버튼을 눌러주세요.</div>
+    <button class="btn-retry" onclick="reboot()">강제 재연결</button>
 </div>
 
 <div class="sticky-top">
@@ -68,23 +68,24 @@
 <div id="toast"></div>
 
 <script>
-    // ★★★ 사장님의 새로운 구글 앱스 스크립트 배포 주소를 아래 따옴표 안에 넣어주세요! ★★★
+    // ★★★ 이 부분을 사장님의 웹 앱 URL로 정확히 교체해 주세요 ★★★
     const URL = 'https://script.google.com/macros/s/AKfycbwv1Tz6oC-LAZC2GYp_BZWx-r4swDbh6fRWVtEpfHsEXuKsAorU_msersLu6o6idtnFsQ/exec'; 
     
     let inventory = [];
 
-    // [이 부분이 '데이터 강제 호출 코드'가 적용된 load 함수입니다]
     async function load() {
         const loader = document.getElementById('loader');
         const msg = document.getElementById('loader-msg');
         try {
-            // 주소 뒤에 시간을 붙여서 구글이 예전 데이터를 주지 못하게 강제합니다.
+            // 캐시 방지용 파라미터 추가
             const finalUrl = URL + (URL.includes('?') ? '&' : '?') + 't=' + Date.now();
             
             const res = await fetch(finalUrl);
-            if(!res.ok) throw new Error();
+            if(!res.ok) throw new Error("Network Error");
             const data = await res.json();
             
+            if(!Array.isArray(data)) throw new Error("Data Format Error");
+
             inventory = [];
             let cat = "기타";
             data.forEach(row => {
@@ -103,7 +104,8 @@
             updateStats();
             loader.style.display = 'none';
         } catch (e) {
-            msg.innerText = "데이터 로딩 실패. 주소를 확인해주세요.";
+            console.error(e);
+            msg.innerHTML = "<b style='color:#ef4444'>데이터 로딩 실패</b><br><small>URL이 정확한지 확인해 주세요.</small>";
         }
     }
 
