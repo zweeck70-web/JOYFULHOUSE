@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JOYFULHOUSE 재고관리</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
-        body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
-        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        body { font-family: -apple-system, sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
+        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .header { padding: 15px 16px 5px; font-size: 24px; font-weight: 900; color: var(--mint); }
-        .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
-        .summary b { font-size: 22px; display: block; font-weight: 800; }
-        .summary span { font-size: 11px; color: #64748b; font-weight: bold; }
-        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fff; scrollbar-width: none; }
-        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; cursor: pointer; }
+        .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; }
+        .summary b { font-size: 20px; display: block; font-weight: 800; }
+        .summary span { font-size: 11px; color: #64748b; }
+        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fff; scrollbar-width: none; border-bottom: 1px solid #f1f5f9; }
+        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 6px 14px; border-radius: 15px; font-size: 12px; font-weight: bold; color: #fff; }
         .search-area { padding: 12px 16px; background: #fff; }
-        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; font-size: 16px; }
+        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; }
         .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
         .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; cursor: pointer; }
         .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
@@ -24,7 +24,7 @@
         .name { font-size: 14px; font-weight: 600; margin-left: 8px; }
         .stock-control { display: flex; align-items: center; gap: 10px; }
         .stock-val { font-size: 18px; font-weight: 800; min-width: 35px; text-align: center; }
-        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
+        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; }
         #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
@@ -33,18 +33,18 @@
 <body>
 
 <div id="loader">
-    <div id="msg">데이터 연결 중...</div>
-    <button id="retry-btn" onclick="load()" style="display:none; margin-top:15px; padding:10px 20px; border-radius:8px; background:var(--mint); color:white; border:none; font-weight:bold;">수동으로 불러오기</button>
+    <div id="msg">데이터를 동기화하고 있습니다...</div>
+    <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; border-radius:8px; border:1px solid #ddd; background:#fff;">강제 새로고침</button>
 </div>
 
 <div id="io-modal" class="modal">
     <div class="modal-content">
         <h3 id="modal-title" style="text-align:center;">재고 조정</h3>
-        <input type="text" id="modal-id" style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box;" placeholder="바코드 입력">
-        <input type="number" id="modal-amt" style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #e2e8f0; border-radius:8px; box-sizing:border-box;" placeholder="수량 입력">
+        <input type="text" id="modal-id" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" placeholder="바코드 입력">
+        <input type="number" id="modal-amt" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" placeholder="수량 입력">
         <div style="display:flex; gap:10px;">
-            <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
-            <button id="modal-submit" style="flex:1; padding:12px; border-radius:8px; border:none; background:var(--mint); color:white; font-weight:bold;">확인</button>
+            <button onclick="closeModal()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#eee;">취소</button>
+            <button id="modal-submit" style="flex:1; padding:12px; border:none; border-radius:8px; background:var(--mint); color:white; font-weight:bold;">확인</button>
         </div>
     </div>
 </div>
@@ -52,11 +52,11 @@
 <div id="file-modal" class="modal">
     <div class="modal-content">
         <h3 style="text-align:center;">주문서 업로드</h3>
-        <p style="font-size:12px; color:gray; text-align:center;">A열: 바코드 / B열: 출고수량</p>
-        <input type="file" id="excel-input" style="width:100%; margin-bottom:15px;" accept=".xlsx, .xls, .csv">
+        <p style="font-size:12px; color:gray; text-align:center; margin-bottom:15px;">A열: 바코드 / B열: 수량 (출고)</p>
+        <input type="file" id="excel-input" style="width:100%; margin-bottom:20px;" accept=".xlsx, .xls">
         <div style="display:flex; gap:10px;">
-            <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
-            <button onclick="handleExcel()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#6366f1; color:white; font-weight:bold;">엑셀 읽기</button>
+            <button onclick="closeModal()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#eee;">취소</button>
+            <button onclick="handleExcel()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#6366f1; color:white; font-weight:bold;">파일 읽기</button>
         </div>
     </div>
 </div>
@@ -69,7 +69,7 @@
         <div><span>위험</span><b id="st-d" style="color:red">0</b></div>
     </div>
     <div id="nav-tabs" class="nav-tabs"></div>
-    <div class="search-area"><input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색" onkeyup="render()"></div>
+    <div class="search-area"><input type="text" id="search" placeholder="🔍 검색어 입력" onkeyup="render()"></div>
     <div class="btn-group">
         <button style="background:#22c55e" onclick="openIOModal('입고')">입고</button>
         <button style="background:#f97316" onclick="openIOModal('출고')">출고</button>
@@ -80,33 +80,27 @@
 <div id="list"></div>
 
 <script>
-    // ★ 사장님의 웹 앱 URL (배포 주소)을 여기에 꼭 넣어주세요!
-    const URL = 'https://script.google.com/macros/s/AKfycbw_rPkIAJUHJ5Eh3ctQmz0sz7PBpyC5PTjOWr1Pi4caEhBT1th9PoGVfAvU_qyw7DJqMQ/exec'; 
+    // ★ 새로 배포한 주소를 여기에 꼭 넣어주세요!
+    const URL = 'https://script.google.com/macros/s/AKfycbzUUtFWZWnnIyT6hrw8VEKQsltleKSNaT_yTso53Ac-9iwNHvYoqwSPiEjtPddWqSrNpQ/exec'; 
 
     let inventory = [];
 
     function load() {
-        document.getElementById('msg').innerText = "데이터 요청 중...";
-        document.getElementById('retry-btn').style.display = 'none';
-        
         const script = document.createElement('script');
         script.src = URL + "?callback=processData&v=" + new Date().getTime();
         document.body.appendChild(script);
         
-        // 5초 후에도 안 되면 수동 버튼 표시
         setTimeout(() => {
-            if(inventory.length === 0) {
-                document.getElementById('msg').innerText = "PC 보안 차단 확인됨";
-                document.getElementById('retry-btn').style.display = 'block';
-            }
+            if(inventory.length === 0) document.getElementById('msg').innerText = "서버 응답 대기 중...";
         }, 5000);
     }
 
     function processData(rows) {
+        if(!rows || rows.length === 0) return;
         inventory = [];
         let currentCat = "기타";
         rows.forEach((row, i) => {
-            if(i === 0) return; 
+            if(i === 0) return;
             const val = String(row[0] || '').trim();
             if (val.startsWith('[') && val.endsWith(']')) {
                 currentCat = val.replace(/[\[\]]/g, '');
@@ -138,61 +132,42 @@
                     <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
                     <button onclick="update('${i.바코드}', 1)" style="color:var(--deep-mint)">+</button>
                 </div>
-            </div>`).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
+            </div>`).join('') || '<div style="padding:50px; text-align:center;">데이터가 없습니다.</div>';
     }
 
-    /* 엑셀 파일 읽기 (주문서 기능 핵심) */
     function openFileModal() { document.getElementById('file-modal').style.display = 'flex'; }
     
     function handleExcel() {
-        const fileInput = document.getElementById('excel-input');
-        const file = fileInput.files[0];
-        if (!file) return alert("파일을 선택해주세요.");
+        const file = document.getElementById('excel-input').files[0];
+        if (!file) return;
 
         const reader = new FileReader();
         reader.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                // 엑셀 데이터를 배열로 변환
-                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
-                
-                let updates = [];
-                rows.forEach((row, index) => {
-                    if (index === 0) return; // 제목줄 스킵
-                    const barcode = String(row[0] || '').trim();
-                    const qty = parseInt(row[1]) || 0;
-                    if (barcode && qty !== 0) {
-                        updates.push({id: barcode, amount: -qty}); // 주문서이므로 '차감' 처리
-                    }
-                });
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1});
+            
+            let updates = [];
+            rows.forEach((row, idx) => {
+                if(idx === 0) return;
+                const b = String(row[0] || '').trim();
+                const q = parseInt(row[1]) || 0;
+                if(b && q !== 0) updates.push({id: b, amount: -q});
+            });
 
-                if (updates.length > 0) {
-                    if(confirm(`${updates.length}건의 데이터를 반영할까요?`)) {
-                        sendUpdate(updates);
-                        fileInput.value = ""; // 파일 초기화
-                    }
-                } else {
-                    alert("읽을 수 있는 데이터가 없습니다. (A열:바코드, B열:수량 확인)");
-                }
-            } catch (err) {
-                alert("엑셀 파일을 읽는 중 오류가 발생했습니다: " + err.message);
+            if(updates.length > 0 && confirm(`${updates.length}건을 반영할까요?`)) {
+                sendUpdate(updates);
             }
         };
         reader.readAsArrayBuffer(file);
     }
 
     async function sendUpdate(list) {
-        // 화면 재고 즉시 반영
         list.forEach(u => {
             const item = inventory.find(i => String(i.바코드).trim() === u.id);
             if(item) item.재고수량 += u.amount;
         });
         render(); updateStats(); closeModal();
-        
-        // 구글 시트 전송 (CORS 차단 방지용 no-cors)
         fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(list) });
     }
 
