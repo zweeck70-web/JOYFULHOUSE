@@ -6,155 +6,165 @@
     <title>JOYFULHOUSE 재고관리</title>
     <style>
         :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
-        body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
+        body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
         .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); }
         .header { padding: 15px 16px 5px; font-size: 24px; font-weight: 900; color: var(--mint); }
         .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
-        .summary b { font-size: 22px; display: block; font-weight: 800; }
+        .summary b { font-size: 20px; display: block; font-weight: 800; }
         .summary span { font-size: 11px; color: #64748b; font-weight: bold; }
         .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fff; scrollbar-width: none; }
-        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; cursor: pointer; }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex-shrink: 0; background: #f1f5f9; border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #64748b; cursor: pointer; }
+        .tab-btn.active { background: var(--mustard); color: #fff; border-color: var(--mustard); }
         .search-area { padding: 12px 16px; background: #fff; }
         input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; }
-        .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
-        .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; cursor: pointer; }
-        
-        /* 목록 아이템 (헤더 칸 제거됨) */
         .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-        .barcode-tag { font-family: monospace; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; }
-        .name { font-size: 14px; font-weight: 600; margin-left: 8px; }
-        .stock-control { display: flex; align-items: center; gap: 10px; }
-        .stock-val { font-size: 18px; font-weight: 800; min-width: 35px; text-align: center; }
-        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; }
-        .modal-content input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        
-        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .barcode-tag { font-family: monospace; font-size: 10px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; }
+        .name { font-size: 14px; font-weight: 600; margin-left: 8px; display: block; margin-top: 2px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .stock-control { display: flex; align-items: center; gap: 8px; }
+        .stock-val { font-size: 18px; font-weight: 800; min-width: 30px; text-align: center; }
+        .stock-control button { width: 35px; height: 35px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; cursor: pointer; }
+        #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="loader">데이터를 불러오는 중...</div>
-
-<div id="io-modal" class="modal">
-    <div class="modal-content">
-        <h3 id="modal-title" style="text-align:center;">재고 조정</h3>
-        <input type="text" id="modal-id" placeholder="바코드 입력 또는 스캔">
-        <input type="number" id="modal-amt" placeholder="수량 입력">
-        <div style="display:flex; gap:10px;">
-            <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
-            <button id="modal-submit" style="flex:1; padding:12px; border-radius:8px; border:none; background:var(--mint); color:white; font-weight:bold;">확인</button>
-        </div>
-    </div>
+<div id="loader">
+    <div style="font-size: 30px; margin-bottom: 10px;">🏠</div>
+    데이터 동기화 중...
 </div>
 
 <div class="sticky-top">
-    <div class="header">🏠 JOYFULHOUSE</div>
+    <div class="header">JOYFULHOUSE</div>
     <div class="summary">
         <div><span>품목</span><b id="st-k">0</b></div>
-        <div><span>총재고</span><b id="st-q">0</b></div>
+        <div><span>총재고</span><b id="st-q" style="color:var(--deep-mint)">0</b></div>
         <div><span>위험</span><b id="st-d" style="color:red">0</b></div>
     </div>
-    <div id="nav-tabs" class="nav-tabs"></div>
-    <div class="search-area"><input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색" onkeyup="render()"></div>
-    <div class="btn-group">
-        <button style="background:#22c55e" onclick="openIOModal('입고')">입고</button>
-        <button style="background:#f97316" onclick="openIOModal('출고')">출고</button>
-        <button style="background:#6366f1" onclick="alert('엑셀 업로드 기능은 준비 중입니다.')">주문서</button>
+    <div id="nav-tabs" class="nav-tabs">
+        <button class="tab-btn active" onclick="filterCat('전체')">전체</button>
+        <button class="tab-btn" onclick="filterCat('액자')">액자류</button>
+        <button class="tab-btn" onclick="filterCat('카드')">카드/엽서</button>
+        <button class="tab-btn" onclick="filterCat('시계')">시계류</button>
+        <button class="tab-btn" onclick="filterCat('주보')">주보/봉투</button>
     </div>
+    <div class="search-area"><input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색" onkeyup="handleSearch()"></div>
 </div>
 
 <div id="list"></div>
 
 <script>
-    // ★ 1. 새로 배포한 구글 웹 앱 URL을 여기에 넣어주세요
-    const URL = 'https://script.google.com/macros/s/AKfycbw6jOQw_7TKmlB24YrLN9IPPxATYciHzVWfBffg9jVTrzo0j2z_niykoDTF4Pz2qtvF/exec'; 
+    // ★ 여기에 새로 배포한 구글 웹 앱 URL을 넣으세요
+    const URL = 'https://script.google.com/macros/s/AKfycbxYF2mVhFUTgFyKmT3UvvK-21W1q77YfAvR6oa9k7PFG-GNeXdzaCXIBq4kcRqYGQCn/exec'; 
 
     let inventory = [];
 
-    // [핵심] fetch를 사용하여 PC 로딩 성공률을 높입니다.
+    // 사장님의 455개 리스트 기반 초기 데이터 (로딩 전 표시용)
+    const masterList = [
+        {id:"DF55001", name:"55000꽃액자_여호와는네게", type:"액자", stock:0},
+        {id:"DF15001", name:"15000꽃액자_축복", type:"액자", stock:0},
+        {id:"SF3009", name:"34000수채화캘리액자_여호와는", type:"액자", stock:0},
+        {id:"KC2401", name:"24000시계/원형_예수사랑(와인)", type:"시계", stock:0},
+        {id:"PS15006", name:"5000엽서세트_축복의동산", type:"카드", stock:0},
+        {id:"KJ-421", name:"A4주보(4면)-421", type:"주보", stock:0},
+        {id:"JO1601", name:"예수사랑헌금봉투_감사", type:"주보", stock:0}
+        // ... (실행 시 실제 구글 시트 데이터가 이 위로 덮어씌워집니다)
+    ];
+
     async function load() {
         try {
-            const response = await fetch(URL);
-            const rawData = await response.json();
-            processData(rawData);
+            const res = await fetch(URL);
+            const rawData = await res.json();
+            
+            // 구글 시트 데이터를 앱 형식으로 변환
+            inventory = [];
+            rawData.forEach((row, i) => {
+                if (i === 0 || !row[0]) return; // 헤더 및 빈줄 제외
+                
+                let type = "액자";
+                const code = String(row[0]);
+                if(code.includes('KC') || code.includes('시계')) type = "시계";
+                else if(code.includes('KJ') || code.includes('JO')) type = "주보";
+                else if(code.includes('PS') || code.includes('PC') || code.includes('NKC')) type = "카드";
+
+                inventory.push({
+                    id: code.trim(),
+                    name: String(row[1]).trim(),
+                    stock: parseInt(row[2]) || 0,
+                    type: type
+                });
+            });
+
+            render(inventory);
+            updateStats(inventory);
+            document.getElementById('loader').style.display = 'none';
         } catch (err) {
-            console.error(err);
-            // fetch가 막힐 경우를 대비한 2차 우회 시도
-            const script = document.createElement('script');
-            script.src = URL + "?callback=processData&t=" + Date.now();
-            document.body.appendChild(script);
+            alert("데이터 연결 실패! URL과 시트 권한을 확인해주세요.");
+            document.getElementById('loader').innerText = "❌ 연결 실패";
         }
     }
 
-    function processData(rows) {
-        inventory = [];
-        let currentCat = "기타";
-        rows.forEach((row, i) => {
-            if(i === 0) return; // 첫 줄 헤더 제외
-            const val = String(row[0] || '').trim();
-            if (val.startsWith('[') && val.endsWith(']')) {
-                currentCat = val.replace(/[\[\]]/g, '');
-            } else if (row[0] && row[1] && row[0] !== "바코드") {
-                inventory.push({ "바코드": String(row[0]), "제품명": String(row[1]), "재고수량": parseInt(row[2]) || 0, "__cat": currentCat });
-            }
-        });
-        renderTabs(); render(); updateStats();
-        document.getElementById('loader').style.display = 'none';
+    function getStatusColor(stock, type) {
+        if (type === '시계' && stock < 7) return 'red';
+        if (type === '주보' && stock < 10) return 'red';
+        if (stock < 5) return 'red';
+        if (stock < 10) return 'orange';
+        return '#22c55e';
     }
 
-    function renderTabs() {
-        const cats = [...new Set(inventory.map(i => i['__cat']))];
-        document.getElementById('nav-tabs').innerHTML = cats.map(c => `<button class="tab-btn" onclick="render('${c}')">${c}</button>`).join('');
-    }
-
-    function render(cat = null) {
-        const q = document.getElementById('search').value.toLowerCase();
-        let filtered = inventory;
-        if(q) filtered = inventory.filter(i => i.제품명.toLowerCase().includes(q) || i.바코드.includes(q));
-        else if(cat) filtered = inventory.filter(i => i.__cat === cat);
-        
-        document.getElementById('list').innerHTML = filtered.map(i => `
+    function render(data) {
+        document.getElementById('list').innerHTML = data.map(i => `
             <div class="item-row">
-                <div><span class="barcode-tag">${i.바코드}</span><span class="name">${i.제품명}</span></div>
-                <div class="stock-control">
-                    <button onclick="update('${i.바코드}', -1)">-</button>
-                    <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
-                    <button onclick="update('${i.바코드}', 1)" style="color:var(--deep-mint)">+</button>
+                <div>
+                    <div class="flex items-center">
+                        <span class="status-dot" style="background: ${getStatusColor(i.stock, i.type)}"></span>
+                        <span class="barcode-tag">${i.id}</span>
+                    </div>
+                    <span class="name">${i.name}</span>
                 </div>
-            </div>`).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
+                <div class="stock-control">
+                    <button onclick="update('${i.id}', -1)">-</button>
+                    <span class="stock-val" style="color:${getStatusColor(i.stock, i.type)}">${i.stock}</span>
+                    <button onclick="update('${i.id}', 1)" style="color:var(--deep-mint)">+</button>
+                </div>
+            </div>`).join('');
     }
-
-    function openIOModal(type) {
-        document.getElementById('modal-title').innerText = type;
-        document.getElementById('modal-id').value = "";
-        document.getElementById('modal-amt').value = "";
-        document.getElementById('modal-submit').onclick = () => {
-            const id = document.getElementById('modal-id').value;
-            const amt = parseInt(document.getElementById('modal-amt').value) * (type === '출고' ? -1 : 1);
-            if(id && amt) { update(id, amt); closeModal(); }
-        };
-        document.getElementById('io-modal').style.display = 'flex';
-        document.getElementById('modal-id').focus();
-    }
-
-    function closeModal() { document.getElementById('io-modal').style.display = 'none'; }
 
     async function update(id, amt) {
-        const item = inventory.find(i => String(i.바코드).trim() === String(id).trim());
+        const item = inventory.find(i => i.id === id);
         if(item) {
-            item.재고수량 += amt;
-            render(); updateStats();
+            item.stock += amt;
+            render(inventory);
+            updateStats(inventory);
+            // 비동기로 시트에 저장
             fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: amt}]) });
-        } else { alert("바코드를 확인하세요."); }
+        }
     }
 
-    function updateStats() {
-        document.getElementById('st-q').innerText = inventory.reduce((s, i) => s + i.재고수량, 0).toLocaleString();
-        document.getElementById('st-k').innerText = inventory.length;
-        document.getElementById('st-d').innerText = inventory.filter(i => i.재고수량 < 5).length;
+    function filterCat(cat) {
+        // 버튼 활성화 표시
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        const filtered = (cat === '전체') ? inventory : inventory.filter(i => i.type === cat);
+        render(filtered);
+    }
+
+    function handleSearch() {
+        const q = document.getElementById('search').value.toLowerCase();
+        const filtered = inventory.filter(i => i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q));
+        render(filtered);
+    }
+
+    function updateStats(data) {
+        document.getElementById('st-q').innerText = data.reduce((s, i) => s + i.stock, 0).toLocaleString();
+        document.getElementById('st-k').innerText = data.length;
+        document.getElementById('st-d').innerText = data.filter(i => {
+            if(i.type === '시계') return i.stock < 7;
+            if(i.type === '주보') return i.stock < 10;
+            return i.stock < 5;
+        }).length;
     }
 
     window.onload = load;
