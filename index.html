@@ -4,139 +4,613 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JOYFULHOUSE 재고관리</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
-        body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
-        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); }
-        .header { padding: 15px 16px 5px; font-size: 24px; font-weight: 900; color: var(--mint); }
-        .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
-        .summary b { font-size: 22px; display: block; font-weight: 800; }
-        .summary span { font-size: 11px; color: #64748b; font-weight: bold; }
-        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fff; scrollbar-width: none; }
-        .tab-btn { flex-shrink: 0; background: #f1f5f9; border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #64748b; cursor: pointer; }
-        .tab-btn.active { background: var(--mustard); color: #fff; border-color: var(--mustard); }
-        .search-area { padding: 12px 16px; background: #fff; }
-        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; }
-        .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
-        .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; cursor: pointer; }
-        .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-        .barcode-tag { font-family: monospace; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; }
-        .name { font-size: 14px; font-weight: 600; margin-left: 8px; }
-        .stock-control { display: flex; align-items: center; gap: 10px; }
-        .stock-val { font-size: 18px; font-weight: 800; min-width: 35px; text-align: center; }
-        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
-        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-direction: column; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .cat-btn { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 8px 18px; font-weight: bold; font-size: 13px; color: #64748b; white-space: nowrap; }
+        .cat-btn.active { background: #eab308; color: white; border-color: #eab308; }
     </style>
 </head>
 <body>
 
-<div id="loader">🏠 데이터를 불러오는 중...</div>
-
-<div class="sticky-top">
-    <div class="header">JOYFULHOUSE</div>
-    <div class="summary">
-        <div><span>품목</span><b id="st-k">0</b></div>
-        <div><span>총재고</span><b id="st-q">0</b></div>
-        <div><span>위험</span><b id="st-d" style="color:red">0</b></div>
+<div class="sticky top-0 z-50 bg-white shadow-sm">
+    <div class="p-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🏠</span>
+            <h1 class="text-xl font-black text-teal-400">JOYFULHOUSE</h1>
+        </div>
+        <button onclick="fetchLiveStock()" class="text-[10px] bg-slate-100 px-3 py-1 rounded-full text-slate-500">🔄 동기화</button>
     </div>
-    <div id="nav-tabs" class="nav-tabs"></div>
-    <div class="search-area"><input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색" onkeyup="render()"></div>
+
+    <div class="grid grid-cols-3 gap-2 px-4 pb-4 text-center border-b text-slate-700">
+        <div><p class="text-[10px] text-gray-400 uppercase">품목</p><p id="count-ui" class="font-bold">455</p></div>
+        <div><p class="text-[10px] text-gray-400 uppercase">총재고</p><p id="total-ui" class="font-bold">0</p></div>
+        <div><p class="text-[10px] text-gray-400 uppercase text-red-500">위험</p><p id="risk-ui" class="font-bold text-red-500">0</p></div>
+    </div>
+
+    <div class="flex gap-2 overflow-x-auto p-4 no-scrollbar">
+        <button onclick="filterCat('전체')" class="cat-btn active">전체</button>
+        <button onclick="filterCat('액자')" class="cat-btn">액자류</button>
+        <button onclick="filterCat('시계')" class="cat-btn">시계류</button>
+        <button onclick="filterCat('주보')" class="cat-btn">주보류</button>
+        <button onclick="filterCat('카드')" class="cat-btn">카드류</button>
+        <button onclick="filterCat('엽서')" class="cat-btn">엽서류</button>
+        <button onclick="filterCat('봉투')" class="cat-btn">봉투류</button>
+    </div>
+
+    <div class="px-4 pb-4 space-y-3">
+        <input type="text" id="search" oninput="handleSearch()" placeholder="상품명 또는 바코드 검색" 
+               class="w-full bg-[#f1f5f9] border-none rounded-xl py-2.5 px-4 text-sm outline-none">
+        <div class="grid grid-cols-3 gap-2">
+            <button class="bg-[#22c55e] text-white font-bold py-3 rounded-lg shadow-sm active:scale-95">입고</button>
+            <button class="bg-[#f97316] text-white font-bold py-3 rounded-lg shadow-sm active:scale-95">출고</button>
+            <button class="bg-[#6366f1] text-white font-bold py-3 rounded-lg shadow-sm active:scale-95">주문서</button>
+        </div>
+    </div>
 </div>
 
-<div id="list"></div>
+<div id="list" class="divide-y"></div>
 
 <script>
-    // ★ 여기에 구글 앱스 스크립트 배포 URL을 넣으세요
-    const URL = 'https://script.google.com/macros/s/AKfycbwEYXkOAaoTZmWi9H2Cgeh15-X0WSOo02VrRP-MWjYkRH_k3CDidstO1mLI_vU9AQrp/exec'; 
+    // 🔗 1. 구글 스크립트 주소를 여기에 넣으세요!
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEYXkOAaoTZmWi9H2Cgeh15-X0WSOo02VrRP-MWjYkRH_k3CDidstO1mLI_vU9AQrp/exec";
+
+    // 📦 2. 사장님의 455개 전체 데이터 (제가 직접 다 채워넣었습니다)
+    const rawData = `[꽃액자]
+DF55001,55000꽃액자_여호와는네게,0
+DF55002,55000꽃액자_하늘의보고를,0
+DF50001,50000꽃액자_여호와는네게,0
+DF50002,50000꽃액자_하늘의보고를,0
+DF48001,48000꽃액자_사랑하는자여,0
+DF48002,48000꽃액자_물댄동산,0
+DF45001,45000꽃액자_사랑깊은약속,0
+DF39001,39000꽃액자_행복이가득한우리집,0
+DF39002,39000꽃액자_믿음의가정,0
+DF39003,39000꽃액자_복있는사람,0
+DF39004,39000꽃액자_주를기뻐하라,0
+DF29001,29000꽃액자_예수만섬기는,0
+DF29002,29000꽃액자_복주고복주며,0
+DF29003,29000꽃액자_평강의주께서,0
+DF29004,29000꽃액자_사랑하는자여,0
+DF15001,15000꽃액자_축복,0
+DF15002,15000꽃액자_사랑,0
+DF15003,15000꽃액자_은혜,0
+DF15004,15000꽃액자_기쁨,0
+[말씀수지액자]
+SF3009,34000수채화캘리액자_여호와는,0
+SF27001,27000말씀액자_야베스의기도,0
+SF27002,27000말씀액자_물댄동산,0
+SF27003,27000말씀액자_여호와는나의목자,0
+SF27004,27000말씀액자_하나님은사랑이시라,0
+SF27005,27000말씀액자_예수만섬기는우리집,0
+SF1901,19000말씀액자_기쁨,0
+SF1902,19000말씀액자_사랑,0
+SF1903,19000말씀액자_축복,0
+SF1904,19000말씀액자_행복,0
+SF17010,17000말씀액자_사랑하는자여,0
+SF17011,17000말씀액자_예수만섬기는,0
+SF17012,17000말씀액자_하나님은사랑이시라,0
+SF17013,17000말씀액자_하늘의아름다운,0
+SF1510,15000수채화캘리_내가반드시,0
+SF1511,15000수채화캘리_너는물댄동산,0
+SF1512,15000수채화캘리_네이름을창대하게,0
+SF1513,15000수채화캘리_사랑하는자여,0
+SF14001,14000말씀액자_예수사랑,0
+SF1301,13000말씀액자_기쁨이샘솟는우리집,0
+SF1302,13000말씀액자_사랑이넘치는우리집,0
+SF1303,13000말씀액자_축복이넘치는우리집,0
+SF1304,13000말씀액자_행복이가득한우리집,0
+SF1310,13000수채화캘리_내가반드시,0
+SF1311,13000수채화캘리_너는물댄동산,0
+SF1312,13000수채화캘리_네이름을창대,0
+SF1313,13000수채화캘리_사랑하는자여,0
+SF01001,10000우리집_기쁨이샘솟는우리집,0
+SF01002,10000우리집_사랑이풍성한우리집,0
+SF01003,10000우리집_축복이넘치는우리집,0
+SF01004,10000우리집_예수만섬기는우리집,0
+SF01005,10000우리집_행복이가득한우리집,0
+SF01006,10000우리집_은혜가풍성한우리집,0
+SF9001,9000수채화캘리액자_기도,0
+SF09001,9000우리집_기쁨이샘솟는우리집,0
+SF9002,9000수채화캘리액자_기쁨,0
+SF09002,9000우리집_사랑이풍성한우리집,0
+SF9003,9000수채화캘리액자_사랑,0
+SF09003,9000우리집_축복이넘치는우리집,0
+SF9004,9000수채화캘리액자_은혜,0
+SF09004,9000우리집_예수만섬기는우리집,0
+SF9005,9000수채화캘리액자_축복,0
+SF09005,9000우리집_행복이가득한우리집,0
+SF9006,9000수채화캘리액자_행복,0
+SF09006,9000우리집_은혜가풍성한우리집,0
+SF8001,8000말씀액자_내가반드시,0
+SF8002,8000말씀액자_하늘의아름다운보고를,0
+SF8003,8000말씀액자_하나님은사랑,0
+SF8004,8000말씀액자_사랑하는자여,0
+SF8005,8000말씀액자_너는사랑받기위해,0
+SF8006,8000말씀액자_너는시냇가에심은,0
+SF8007,8000말씀액자_네이름을창대하게,0
+[말씀부조액자]
+SF20001,20000말씀입체액자_나의힘이되신,0
+SF20002,20000말씀입체액자_주께서내게,0
+SF20003,20000말씀입체액자_아무것도,0
+SF20004,20000말씀입체액자_여호와는네게,0
+[기타&독판액자]
+AL30001,30000알루미늄액자_동행,0
+AL30002,30000알루미늄액자_Always,0
+AL30003,30000알루미늄액자_소망,0
+JJ2301,23000독판제작,0
+JJ2001,20000독판액자,0
+WA18001,18000우드아크릴액자_동행,0
+WA18002,18000우드아크릴액자_기쁨,0
+WA18003,18000우드아크릴액자_사랑,0
+WA18004,18000우드아크릴액자_평안,0
+JJ1301,13000독판액자,0
+JJ6001,60000독판제작,0
+JJ2801,28000독판제작,0
+JJ2501,25000독판제작,0
+CR001,다릅나무 십자가,0
+[캔버스액자]
+KCP2501,캔버스아트말씀액자(小)_피아노/오렌지,0
+KCP2502,캔버스아트말씀액자(小)_사랑이풍성/그린,0
+KCP2503,캔버스아트말씀액자(小)_집/핑크,0
+KCP2504,캔버스캘리말씀액자(小)_여호와는,0
+KCP2505,캔버스캘리말씀액자(小)_사랑/수채화꽃,0
+KCP2506,캔버스캘리말씀액자(小)_예수동행,0
+KCP2507,캔버스캘리말씀액자(小)_옥합을깨뜨려,0
+KCP2508,캔버스캘리말씀액자(小)_예수사랑,0
+KCP2509,캔버스캘리말씀액자(小)_나의힘이,0
+KCP3501,캔버스아트말씀액자(中)_피아노/오렌지,0
+KCP3502,캔버스아트말씀액자(中)_사랑이풍성/그린,0
+KCP3503,캔버스아트말씀액자(中)_집/핑크,0
+KCP3504,캔버스캘리말씀액자(中)_여호와는,0
+KCP3505,캔버스캘리말씀액자(中)_사랑/수채화꽃,0
+KCP3506,캔버스캘리말씀액자(中)_예수동행,0
+KCP3507,캔버스캘리말씀액자(中)_옥합을깨뜨려,0
+KCP3508,캔버스캘리말씀액자(中)_예수사랑,0
+KCP3509,캔버스캘리말씀액자(中)_나의힘이,0
+KCP5501,캔버스아트말씀액자(大)_피아노/오렌지,0
+KCP5502,캔버스아트말씀액자(大)_사랑이풍성/그린,0
+KCP5503,캔버스아트말씀액자(大)_집/핑크,0
+KCP5504,캔버스캘리말씀액자(大)_여호와는,0
+KCP5505,캔버스캘리말씀액자(大)_사랑/수채화꽃,0
+KCP5506,캔버스캘리말씀액자(大)_예수동행,0
+KCP5507,캔버스캘리말씀액자(大)_옥합을깨뜨려,0
+KCP5508,캔버스캘리말씀액자(大)_예수사랑,0
+KCP5509,캔버스캘리말씀액자(大)_나의힘이,0
+KCP23001,캔버스아트캘리액자_기쁨,0
+KCP23002,캔버스아트캘리액자_생명,0
+KCP25001,캔버스캘리액자(小)_나는 항상,0
+KCP25002,캔버스캘리액자(小)_나의힘이신,0
+KCP25003,캔버스캘리액자(小)_너희는여호와의,0
+KCP25004,캔버스캘리액자(小)ㅡ여호와는나의,0
+KCP25005,캔버스캘리액자(小)_여호와를바라는,0
+KCP25006,캔버스캘리액자(小)_주의말씀은,0
+KCP35001,캔버스캘리액자(中)_나는 항상,0
+KCP35002,캔버스캘리액자(中)_나의힘이신,0
+KCP35003,캔버스캘리액자(中)_너희는여호와의,0
+KCP35005,캔버스캘리액자(中)_여호와를바라는,0
+KCP35006,캔버스캘리액자(中)_주의말씀은,0
+KCP50001,캔버스아트캘리액자_기도,0
+KCP50002,캔버스아트캘리액자_믿음,0
+KCP54001,수채화캔버스아트액자_깊은데로,0
+KCP54002,수채화캔버스아트액자_행복,0
+KCP54003,수채화캔버스아트액자_여호와는 능력,0
+KCP55001,캔버스캘리액자(大)_나는 항상,0
+KCP55002,캔버스캘리액자(大)_나의힘이신,0
+KCP55003,캔버스캘리액자(大)_너희는여호와의,0
+KCP55005,캔버스캘리액자(大)_여호와를바라는,0
+KCP55006,캔버스캘리액자(大)_주의말씀은,0
+KCP55010,캔버스아트캘리액자_예수,0
+KCP55011,캔버스아트캘리액자_은혜,0
+KCP70010,캔버스아트캘리액자_예수,0
+KCP70011,캔버스아트캘리액자_은혜,0
+KCP85001,캔버스수채화말씀액자-깊은데로가서,0
+KCP145001,캔버스수채화말씀액자-산상수훈,0
+[엽서류]
+PS15006,5000엽서세트_축복의동산,0
+PS15007,5000엽서세트_예수사랑,0
+PC50001,5000엽서_예수사랑/가나혼인잔치,0
+PC50002,5000엽서_예수사랑/우물가여인,0
+PC50003,5000엽서_예수사랑/153물고기,0
+PC50004,5000엽서_예수사랑/산상수훈,0
+PC50005,5000엽서_예수사랑/주의옷자락만지며,0
+PC50006,5000엽서_예수사랑/오병이어,0
+PC50007,5000엽서_예수사랑/삭개오,0
+PC50008,5000엽서_예수사랑/옥합을깨뜨려,0
+PC50009,5000엽서_예수사랑/나귀타신예수님,0
+PC50010,5000엽서_예수사랑/너와항상함께,0
+PC50011,5000엽서_축복의동산/너는복이될지라,0
+PC50012,5000엽서_축복의동산/사랑하는자여,0
+PC50013,5000엽서_축복의동산/아무것도,0
+PC50014,5000엽서_축복의동산/아침에주께서,0
+PC50015,5000엽서_축복의동산/여호와는나의,0
+PC50016,5000엽서_축복의동산/여호와는네게,0
+PC50017,5000엽서_축복의동산/평강의복을,0
+PC50018,5000엽서_축복의동산/하나님은사랑,0
+PC50019,5000엽서_축복의동산/하늘의보고,0
+PC50020,5000엽서_축복의동산/항상기뻐하라,0
+PS15003,2000엽서세트_예수사랑,0
+PS15004,2000엽서세트_축복의동산,0
+PS15001,1500엽서세트_믿음/소망/사랑,0
+PS15002,1500엽서세트_축복의동산,0
+PC20001,200엽서_예수사랑/1.가나혼인잔치,0
+PC20002,200엽서_예수사랑/2.우물가여인,0
+PC20003,200엽서_예수사랑/3.153물고기,0
+PC20004,200엽서_예수사랑/4.산상수훈,0
+PC20005,200엽서_예수사랑/5.주의옷자락만지며,0
+PC20006,200엽서_예수사랑/6.오병이어,0
+PC20007,200엽서_예수사랑/7.삭개오,0
+PC20008,200엽서_예수사랑/8.옥합을깨뜨려,0
+PC20009,200엽서_예수사랑/9.나귀타신예수님,0
+PC20010,200엽서_예수사랑/10.너와항상함께,0
+PC20011,200엽서_축복의동산/너는복이될지라,0
+PC20012,200엽서_축복의동산/사랑하는자여,0
+PC20013,200엽서_축복의동산/아무것도,0
+PC20014,200엽서_축복의동산/아침에주께서,0
+PC20015,200엽서_축복의동산/여호와는나의,0
+PC20016,200엽서_축복의동산/여호와는네게,0
+PC20017,200엽서_축복의동산/평강의복을,0
+PC20018,200엽서_축복의동산/하나님은사랑,0
+PC20019,200엽서_축복의동산/하늘의보고를,0
+PC20020,200엽서_축복의동산/항상기뻐하라,0
+PC20021,200엽서_말씀/1.기도,0
+PC20022,200엽서_말씀/2.기쁨,0
+PC20023,200엽서_말씀/3.사랑,0
+PC20024,200엽서_말씀/4.새힘,0
+PC20025,200엽서_말씀/5.소망,0
+PC20026,200엽서_말씀/6.은혜,0
+PC20027,200엽서_말씀/7.지혜,0
+PC20028,200엽서_말씀/8.찬양,0
+PC20029,200엽서_말씀/9.축복,0
+PC20030,200엽서_말씀/10.행복,0
+PC15007,150엽서_사랑/음악,0
+PC15008,150엽서_사랑/겸손,0
+PC15009,150엽서_사랑/참지혜,0
+PC15010,150엽서_사랑/덮어줌,0
+PC15011,150엽서_내게복에복을,0
+PC15012,150엽서_여호와는네게,0
+PC15013,150엽서_여호와의집에,0
+PC15014,150엽서_내가너와함께,0
+PC15015,150엽서_주께서종의집에,0
+PC15016,150엽서_내가노래로,0
+PC15021,150엽서_축복의동산/너는복이될지라,0
+PC15022,150엽서_축복의동산/사랑하는자여,0
+PC15023,150엽서_축복의동산/아무것도,0
+PC15024,150엽서_축복의동산/아침에주께서,0
+PC15025,150엽서_축복의동산/여호와는나의,0
+PC15026,150엽서_축복의동산/여호와는네게,0
+PC15027,150엽서_축복의동산/평강의복을,0
+PC15028,150엽서_축복의동산/하나님은사랑,0
+PC15029,150엽서_축복의동산/하늘의보고를,0
+PC15030,150엽서_축복의동산/항상기뻐하라,0
+[카드류]
+NKC0801,800카드_초대합니다,0
+NKC0802,800카드_당신은/나무,0
+NKC0803,800카드_사랑하는자여,0
+NKC0804,800카드_HappyBirthday,0
+NKC0805,800카드_환영합니다,0
+NKC0806,800카드_축복합니다,0
+NKC0807,800카드_생일축하/케잌,0
+NKC0808,800카드_초청합니다,0
+NKC0809,800카드_나는존귀한자라,0
+NKC08001,800카드_감사합니다/과일(자수),0
+NKC08002,800카드_사랑합니다/새(자수),0
+NKC08003,800카드_축하합니다/새,0
+NKC08004,800카드_생일을축하합니다/피아노,0
+NKC08005,800카드_사랑하는자여/흰꽃,0
+NKC08006,800카드_당신은사랑받기/새하트,0
+NKC08007,800카드_시냇가에심은나무/사다리,0
+NKC08008,800카드_평강의복을/화분꽃,0
+NKC08009,800카드_하나님은사랑이시라/물고기,0
+NKC8010,800카드_당신은/꽃,0
+NKC08010,800카드_감사합니다/과일바구니,0
+NKC8011,800카드_사랑합니다,0
+NKC08011,800카드_축복합니다/꽃병,0
+NKC8012,800카드_감사합니다,0
+NKC08012,800카드_생일을축하합니다/튤립,0
+NKC926,900카드_(꽃)축복/해바라기,0
+NKC927,900카드_(꽃)감사/물망초,0
+NKC928,900카드_(꽃)축하/백합,0
+NKC929,900카드_(꽃)생일/제비,0
+NKC930,900카드_(꽃)당신은/들국화,0
+NKC931,900카드_(꽃)축하/양귀비,0
+NKC932,900카드_(꽃)사약/장미,0
+NKC933,900카드_(꽃)초청/집,0
+NKC934,900카드_(꽃)생일/튤립,0
+NKC935,900카드_(캘리)내가반드시,0
+NKC936,900카드_(캘리)그가하는모든일이,0
+NKC937,900카드_(캘리)너는물댄동산,0
+NKC938,900카드_(캘리)네이름을창대하게,0
+NKC939,900카드_(캘리)당신은사랑받기,0
+NKC940,900카드_(캘리)사랑하는자여,0
+NKC941,900카드_(캘리)주의손으로나를,0
+NKC942,900카드_(캘리)하늘의아름다운,0
+NKC943,900카드_사랑하는자여/요삼1:2,0
+NKC944,900카드_축복합니다/습3:17,0
+NKC945,900카드_평강의주께서/시14:27,0
+NKC946,900카드_생일을축하합니다/민6:24-25,0
+NKC947,900카드_감사합니다/빌4:19,0
+NKC948,900카드_축하합니다/빌1:6,0
+NKC1807,1800_thnakyoucard_set,0
+NKC1001,1000카드_축하/오병이어,0
+NKC1002,1000카드_축하/교회,의자,0
+NKC1003,1000카드_축복합니다,0
+NKC1004,1000카드_생일축하/바이올린,0
+NKC1005,1000카드_생신축하,0
+NKC1006,1000카드_사랑깊은약속,0
+NKC1007,1000카드_환영합니다,0
+NKC1008,1000카드_생일축하/나무,새,0
+NKC1009,1000카드_감사합니다,0
+NKC1010,1000카드_초대합니다,0
+NKC1011,1000카드_감사/화분,가방,0
+NKC1012,1000카드_초청/우체통,0
+NKC1013,1000카드_초대/보라의자,0
+NKC1014,1000카드_생신축하/테이블,0
+NKC1015,1000카드_축복/나무,꽃바구니,0
+NKC1016,1000카드_생일축하/토스트,0
+NKC1017,1000플라워캘리카드_감사,0
+NKC1018,1000플라워캘리카드_생신,0
+NKC1019,1000플라워캘리카드_생신/리스,0
+NKC1020,1000플라워캘리카드_생일,0
+NKC1021,1000플라워캘리카드_생일/생일리스,0
+NKC1022,1000플라워캘리카드_초대,0
+NKC1023,1000플라워캘리카드_축복,0
+NKC1024,1000플라워캘리카드_축하,0
+NKC1025,1000플라워캘리카드_환영,0
+NKC1026,1000플라워캘리카드_초청,0
+NKC1801,1000_thank you card_남자,0
+NKC1802,1000_thank you card_여자,0
+NKC1803,1000_thank you card_고맙습니다,0
+NKC1804,1000_thank you card_감사합니다,0
+NKC1805,1000_thank you card_축복합니다,0
+NKC1806,1000_thank you card_사랑합니다,0
+성탄1000-1,성탄1000-1(마굿간),0
+성탄1000-2,성탄1000-2(트리),0
+성탄1000-3,성탄1000-3(그 맑고 환한 밤중에),0
+성탄1000-4,성탄1000-4(성경책),0
+[예배상]
+KW460001,46000액자테이블,0
+KW460002,46000액자테이블_축복의동산,0
+KW400001,40000액자테이블_시편23편,0
+KW400002,40000액자테이블_여호와는네게,0
+KW400003,40000액자테이블_축복의동산,0
+KW400004,40000액자테이블,0
+KW38001,38000예배상_여호와는,0
+KW360001,36000액자테이블_시편23편,0
+KW360002,36000액자테이블_축복의동산,0
+[머그컵]
+KM15901,15900GODBLESS슬림텀블러_블랙,0
+KM15902,15900GODBLESS슬림텀블러_화이트,0
+KM9801,9900휴대용티보틀-기쁨이내맘에/민트,0
+KM9802,9900휴대용티보틀-기쁨이내맘에/연보라,0
+KM8001,8500뚜껑머그_믿음,0
+KM8002,8500뚜껑머그_소망,0
+KM8003,8500뚜껑머그_사랑,0
+KM6001,6500투톤머그_믿음,0
+KM6002,6500투톤머그_소망,0
+KM6003,6500투톤머그_사랑,0
+[교패-명함]
+KN001,기쁨명함_휘라레(200매),0
+KE_01,기쁨아크릴교패 KE_01,0
+KD_01,기쁨교패 KD_01,0
+KB_01,기쁨교패 KB_01,0
+KN002,기쁨명함_누보지(200매),0
+KE_02,기쁨아크릴교패 KE_02,0
+KC_02,기쁨교패 KC_02,0
+KN003,기쁨명함_일반코팅(500매),0
+KE_03,기쁨아크릴교패 KE_03,0
+KN004,기쁨명함_뒷면인쇄추가,0
+KE_04,기쁨아크릴교패 KE_04,0
+KD_04,기쁨교패 KD_04,0
+KN005,기쁨명함_키칼라메탈릭(200매),0
+KE_05,기쁨아크릴교패 KE_05,0
+KE_06,기쁨아크릴교패 KE_06,0
+KD_06,기쁨교패 KD_06,0
+KC_06,기쁨교패 KC_06,0
+KE_07,기쁨아크릴교패 KE_07,0
+KE_08,기쁨아크릴교패 KE_08,0
+KD_08,기쁨교패 KD_08,0
+KE_09,독판아크릴교패,0
+KN010,포인트카드_2000매,0
+KE_10,독판아크릴교패,0
+KE_11,독판아크릴교패(5T),0
+KE_12,아크릴교패,0
+[시계류]
+KC2401,24000시계/원형_예수사랑(와인),0
+KC2201,22000시계/원형_믿음의가정(흰),0
+KC2202,22000시계/원형_하늘의보고를(흰),0
+KC2203,22000시계/원형_하늘의보고를(그린),0
+KC2204,22000시계_독판,0
+KC9501,9500방수흡착시계_항상기뻐하라,0
+KC9502,9500방수흡착시계_예수사랑,0
+KC9503,9500방수흡착시계_행복이가득한,0
+KC9504,9500방수흡착시계_축복이넘치는,0
+KC9505,9500방수흡착시계_여호와는나의목자,0
+KC9506,9500방수흡착시계_사랑하는자여,0
+KC3201,기쁨말씀벽시계_항상기뻐하라,0
+KC3202,기쁨말씀벽시계_예수사랑,0
+KC3203,기쁨말씀벽시계_행복이가득한우리집,0
+KC3204,기쁨말씀벽시계_축복이넘치는우리집,0
+KC3205,기쁨말씀벽시계_여호와는나의목자,0
+KC3206,기쁨말씀벽시계_사랑하는자여,0
+[주보류]
+EJ401,기쁨해외4면주보_401,0
+EJ402,기쁨해외4면주보_402,0
+EJ403,기쁨해외4면주보_403,0
+EJ404,기쁨해외4면주보_404,0
+EJ405,기쁨해외4면주보_405,0
+EJ406,기쁨해외4면주보_406,0
+EJ407,기쁨해외4면주보_407,0
+EJ408,기쁨해외4면주보_408,0
+KJ-421,A4주보(4면)-421,0
+KJ-422,A4주보(4면)-422,0
+KJ-423,A4주보(4면)-423,0
+KJ-424,A4주보(4면)-424,0
+KJ-425,A4주보(4면)-425,0
+KJ-426,A4주보(4면)-426,0
+KJ-427,A4주보(4면)-427,0
+KJ-428,A4주보(4면)-428,0
+[봉투류]
+JO1601,예수사랑헌금봉투_감사,0
+JO1602,예수사랑헌금봉투_다용도,0
+JO1603,예수사랑헌금봉투_십일조,0
+JO1604,예수사랑헌금봉투_주일,0
+JO1605,예수사랑헌금봉투_주정,0
+JO1701,패브릭헌금봉투_감사,0
+JO1702,패브릭헌금봉투_다용도,0
+JO1703,패브릭헌금봉투_십일조,0
+JO1704,패브릭헌금봉투_주일,0
+JO1705,패브릭헌금봉투_주정,0
+JO1706,패브릭헌금봉투_건축,0
+JO1707,패브릭헌금봉투_일천번제,0
+JO3001,헌금봉투_주일,0
+JO3002,헌금봉투_감사,0
+JO3003,헌금봉투_십일조,0
+JO3004,헌금봉투_선교,0
+JO3005,무지개헌금봉투_다용도,0
+JO3006,무지개헌금봉투_일천번제,0
+JO3007,무지개헌금봉투_감사/연두,0
+JO3008,무지개헌금봉투_십일조,0
+JO3009,무지개헌금봉투_건축,0
+JO3010,무지개헌금봉투_주일,0
+JO3011,무지개헌금봉투_감사/보라,0
+JO5001,자수꽃감사,0
+JO5002,자수꽃십일조,0
+JO5003,자수꽃주일,0
+JO5004,자수꽃선교,0
+JO5005,자수꽃다용도,0
+JO5006,자수꽃무지,0
+추수감사01,추수감사_1,0
+연간봉투01,연간헌금봉투_회비,0
+신년감사01,신년감사01,0
+성탄감사01,성탄감사01_빨강,0
+생일감사01,생일감사01_분홍/나무비둘기,0
+부활감사01,부활감사01_백합/노랑,0
+맥추감사01,맥추감사_01,0
+추수감사02,추수감사_2,0
+연간봉투02,연간헌금봉투_주정,0
+신년감사2,신년감사02_교회,0
+성탄감사02,성탄감사02_동방박사,0
+생일감사02,생일감사02_미색/큰비둘기,0
+부활감사02,부활감사02_십자가/파랑,0
+맥추감사02,맥추감사_02,0
+추수감사03,추수감사_3,0
+연간봉투03,연간헌금봉투_십일조,0
+신년감사3,신년감사03_항아리,0
+성탄감사03,성탄감사03_클레이/마굿간,0
+부활감사03,부활감사03_부활의기쁨/노랑,0
+맥추감사03,맥추감사_03,0
+추수감사04,추수감사_4,0
+연간봉투04,연간헌금봉투_선교,0
+성탄감사04,성탄감사04_내가 온백성에게/양,0
+부활감사04,부활감사04_살아나시다/빨강,0
+추수감사05,추수감사_5,0
+연간봉투05,연간헌금봉투_건축,0
+성탄감사05,성탄감사05_그린,0
+부활감사05,부활감사05_생명 기쁨,0
+추수감사06,추수감사_6,0
+연간봉투06,연간헌금봉투_주일,0
+추수감사07,추수감사_7,0
+연간봉투07,연간헌금봉투_헌금,0
+JO2501,마음담은봉투_감사,0
+JO2502,마음담은봉투_고맙,0
+JO2503,마음담은봉투_사랑,0
+JO2504,마음담은봉투_축복,0
+JO2505,마음담은봉투_축하,0
+JO2506,경조사봉투_주님의이름으로축복합니다,0
+JO2507,경조사봉투_결혼을축하합니다,0
+JO2508,경조사봉투_주님의위로와소망이,0
+[용품]
+JSS7501,JSS7501_핸드폰거치대(화이트),0
+JSS7502,JSS7502_핸드폰거치대(블랙),0`;
 
     let inventory = [];
+    let currentCatFilter = "전체";
 
-    async function load() {
-        try {
-            const response = await fetch(URL);
-            const rawData = await response.json();
-            processData(rawData);
-            document.getElementById('loader').style.display = 'none';
-        } catch (err) {
-            console.error(err);
-            document.getElementById('loader').innerText = "❌ 로딩 실패 (URL/권한 확인)";
-        }
-    }
-
-    function processData(rows) {
-        inventory = [];
-        let currentCat = "기타";
-        
-        rows.forEach((row, i) => {
-            if(i === 0) return; // 제목줄 패스
-            
-            const firstCell = String(row[0] || '').trim();
-            if (firstCell.startsWith('[') && firstCell.endsWith(']')) {
-                currentCat = firstCell.replace(/[\[\]]/g, '');
-            } else if (row[0] && row[1]) {
-                inventory.push({ 
-                    "바코드": String(row[0]), 
-                    "제품명": String(row[1]), 
-                    "재고수량": parseInt(row[2]) || 0, 
-                    "__cat": currentCat 
-                });
+    // 데이터 초기화
+    function init() {
+        let cat = "기타";
+        rawData.split('\n').forEach(line => {
+            if(line.startsWith('[')) cat = line.replace('[','').replace(']','');
+            else if(line.includes(',')) {
+                const [id, name, stock] = line.split(',');
+                inventory.push({ id:id.trim(), name:name.trim(), stock:parseInt(stock)||0, cat:cat });
             }
         });
-        renderTabs(); 
-        render(); 
-        updateStats();
+        render(inventory);
     }
 
-    function renderTabs() {
-        const cats = [...new Set(inventory.map(i => i['__cat']))];
-        const tabHtml = `<button class="tab-btn active" onclick="render()">전체</button>` + 
-                        cats.map(c => `<button class="tab-btn" onclick="render('${c}')">${c}</button>`).join('');
-        document.getElementById('nav-tabs').innerHTML = tabHtml;
-    }
-
-    function render(cat = null) {
-        const q = document.getElementById('search').value.toLowerCase();
-        
-        // 탭 활성화 UI 처리
-        const buttons = document.querySelectorAll('.tab-btn');
-        buttons.forEach(btn => {
-            if(btn.innerText === (cat || '전체')) btn.classList.add('active');
-            else btn.classList.remove('active');
-        });
-
-        let filtered = inventory;
-        if(q) filtered = inventory.filter(i => i.제품명.toLowerCase().includes(q) || i.바코드.includes(q));
-        else if(cat) filtered = inventory.filter(i => i.__cat === cat);
-        
-        document.getElementById('list').innerHTML = filtered.map(i => `
-            <div class="item-row">
-                <div><span class="barcode-tag">${i.바코드}</span><span class="name">${i.제품명}</span></div>
-                <div class="stock-control">
-                    <button onclick="update('${i.바코드}', -1)">-</button>
-                    <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
-                    <button onclick="update('${i.바코드}', 1)" style="color:var(--deep-mint)">+</button>
-                </div>
-            </div>`).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
-    }
-
-    async function update(id, amt) {
-        const item = inventory.find(i => String(i.바코드).trim() === String(id).trim());
-        if(item) {
-            item.재고수량 += amt;
-            render(); 
-            updateStats();
-            // 구글 시트로 전송 (응답 기다리지 않음)
-            fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: amt}]) });
+    // 신호등 색상 로직
+    function getDotColor(item) {
+        const s = item.stock;
+        if (item.cat.includes('시계')) {
+            if (s >= 10) return '#22c55e'; if (s < 7) return '#ef4444'; return '#eab308';
+        } else if (item.cat.includes('주보')) {
+            if (s >= 15) return '#22c55e'; if (s < 10) return '#ef4444'; return '#eab308';
+        } else { // 액자 및 나머지
+            if (s >= 10) return '#22c55e'; if (s < 5) return '#ef4444'; return '#eab308';
         }
     }
 
-    function updateStats() {
-        document.getElementById('st-q').innerText = inventory.reduce((s, i) => s + i.재고수량, 0).toLocaleString();
-        document.getElementById('st-k').innerText = inventory.length;
-        document.getElementById('st-d').innerText = inventory.filter(i => i.재고수량 < 5).length;
+    function render(data) {
+        const list = document.getElementById('list');
+        list.innerHTML = data.map(item => `
+            <div class="bg-white p-4 flex justify-between items-center">
+                <div>
+                    <div class="flex items-center">
+                        <span class="status-dot" style="background-color:${getDotColor(item)}"></span>
+                        <span class="text-[10px] bg-slate-100 text-slate-400 px-1 font-mono rounded">${item.id}</span>
+                    </div>
+                    <span class="text-[14px] font-bold text-slate-700 block mt-0.5">${item.name}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="w-10 h-10 border rounded-lg text-slate-300">-</button>
+                    <span class="w-6 text-center text-xl font-black ${item.stock < 5 ? 'text-red-500' : 'text-teal-500'}">${item.stock}</span>
+                    <button class="w-10 h-10 border rounded-lg text-teal-500">+</button>
+                </div>
+            </div>
+        `).join('');
+
+        // 통계 계산
+        document.getElementById('total-ui').innerText = inventory.reduce((a,b)=>a+b.stock, 0);
+        document.getElementById('risk-ui').innerText = inventory.filter(i => {
+            if(i.cat.includes('시계')) return i.stock < 7;
+            if(i.cat.includes('주보')) return i.stock < 10;
+            return i.stock < 5;
+        }).length;
     }
 
-    window.onload = load;
+    async function fetchLiveStock() {
+        if(!SCRIPT_URL.startsWith('http')) return alert("스크립트 주소를 넣어주세요!");
+        try {
+            const res = await fetch(SCRIPT_URL);
+            const live = await res.json();
+            inventory.forEach(i => {
+                const found = live.find(l => l.바코드 === i.id);
+                if(found) i.stock = found.재고수량;
+            });
+            render(inventory);
+        } catch(e) { alert("연결 실패!"); }
+    }
+
+    function filterCat(c) {
+        currentCatFilter = c;
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(c)));
+        const filtered = c === '전체' ? inventory : inventory.filter(i => i.cat.includes(c));
+        render(filtered);
+    }
+
+    function handleSearch() {
+        const q = document.getElementById('search').value.toLowerCase();
+        const filtered = (currentCatFilter === '전체' ? inventory : inventory.filter(i => i.cat.includes(currentCatFilter)))
+                        .filter(i => i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q));
+        render(filtered);
+    }
+
+    init();
 </script>
 </body>
 </html>
