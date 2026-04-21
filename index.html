@@ -5,30 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JOYFULHOUSE 재고관리</title>
     <style>
-        :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
+        :root { --mint: #2dd4bf; --deep-mint: #0d9488; --text: #1e293b; }
         body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
-        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid #e2e8f0; }
         .header { padding: 15px 16px; font-size: 22px; font-weight: 900; color: var(--mint); }
         .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
         .summary b { font-size: 20px; display: block; }
         .summary span { font-size: 11px; color: #64748b; }
         .search-area { padding: 12px; background: #fff; }
-        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; }
+        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; box-sizing: border-box; background: #f1f5f9; outline: none; }
         .btn-group { display: flex; gap: 8px; padding: 0 12px 12px; background: #fff; }
-        .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: bold; font-size: 15px; }
+        .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: bold; }
         .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-        .item-info { display: flex; flex-direction: column; gap: 4px; }
-        .barcode { font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; width: fit-content; }
-        .name { font-size: 15px; font-weight: 600; }
+        .barcode { font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; }
+        .name { font-size: 15px; font-weight: 600; display: block; margin-top: 4px; }
         .stock-control { display: flex; align-items: center; gap: 10px; }
         .stock-val { font-size: 18px; font-weight: 800; width: 40px; text-align: center; }
-        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
+        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; font-weight: bold; font-size: 18px; }
         #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    </small></style>
+    </style>
 </head>
 <body>
 
-<div id="loader">데이터 연결 중...</div>
+<div id="loader">데이터 연결 시도 중...</div>
 
 <div class="sticky-top">
     <div class="header">🏠 JOYFULHOUSE</div>
@@ -39,26 +38,32 @@
     </div>
     <div class="search-area"><input type="text" id="search" placeholder="상품명 또는 바코드 검색" onkeyup="render()"></div>
     <div class="btn-group">
-        <button style="background:#22c55e" onclick="alert('목록의 + 버튼을 이용해 입고하세요')">입고</button>
-        <button style="background:#f97316" onclick="alert('목록의 - 버튼을 이용해 출고하세요')">출고</button>
+        <button style="background:#22c55e" onclick="alert('목록의 + 버튼으로 입고하세요')">입고</button>
+        <button style="background:#f97316" onclick="alert('목록의 - 버튼으로 출고하세요')">출고</button>
     </div>
 </div>
 
 <div id="list"></div>
 
 <script>
+    // ★ 여기에 새로 배포한 웹 앱 URL을 넣어주세요
     const URL = 'https://script.google.com/macros/s/AKfycbyDhHZplwOgL_jtHgPt3-aPcxLtdbWS_fqnxkFR_9YWbcMS87oxBC3EdtuBxwQE5vqkpg/exec'; 
+
     let inventory = [];
 
-    async function load() {
-        try {
-            const res = await fetch(URL + "?t=" + Date.now());
-            inventory = await res.json();
-            render(); updateStats();
-            document.getElementById('loader').style.display = 'none';
-        } catch (e) {
-            document.getElementById('loader').innerText = "연결 실패. 주소를 확인하세요.";
-        }
+    // [JSONP 우회 수신기]
+    function load() {
+        const script = document.createElement('script');
+        script.src = URL + "?callback=handleData&t=" + Date.now();
+        document.body.appendChild(script);
+    }
+
+    // 데이터를 받으면 실행되는 함수
+    function handleData(data) {
+        inventory = data;
+        render();
+        updateStats();
+        document.getElementById('loader').style.display = 'none';
     }
 
     function render() {
@@ -67,7 +72,7 @@
         
         document.getElementById('list').innerHTML = filtered.map(i => `
             <div class="item-row">
-                <div class="item-info">
+                <div>
                     <span class="barcode">${i.바코드}</span>
                     <span class="name">${i.제품명}</span>
                 </div>
@@ -85,7 +90,7 @@
         if(item) {
             item.재고수량 += amt;
             render(); updateStats();
-            fetch(URL, { method: 'POST', body: JSON.stringify([{id, amount: amt}]) });
+            fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: amt}]) });
         }
     }
 
