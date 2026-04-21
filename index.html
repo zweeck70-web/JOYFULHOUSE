@@ -4,225 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JOYFULHOUSE 재고관리</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .category-btn.active { background-color: #eab308; color: white; border-color: #eab308; }
-        .loading-shimmer { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
+        body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
+        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); }
+        .header { padding: 15px 16px 5px; font-size: 24px; font-weight: 900; color: var(--mint); }
+        .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
+        .summary b { font-size: 22px; display: block; font-weight: 800; }
+        .summary span { font-size: 11px; color: #64748b; font-weight: bold; }
+        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fff; scrollbar-width: none; }
+        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; cursor: pointer; }
+        .search-area { padding: 12px 16px; background: #fff; }
+        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; }
+        .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
+        .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; cursor: pointer; }
+        
+        /* 목록 아이템 (헤더 칸 제거됨) */
+        .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+        .barcode-tag { font-family: monospace; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; }
+        .name { font-size: 14px; font-weight: 600; margin-left: 8px; }
+        .stock-control { display: flex; align-items: center; gap: 10px; }
+        .stock-val { font-size: 18px; font-weight: 800; min-width: 35px; text-align: center; }
+        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; }
+        .modal-content input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="sticky top-0 z-50 bg-white shadow-sm">
-    <div class="p-4 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <span class="text-2xl">🏠</span>
-            <h1 class="text-xl font-black text-teal-500 tracking-tight">JOYFULHOUSE</h1>
+<div id="loader">데이터를 불러오는 중...</div>
+
+<div id="io-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title" style="text-align:center;">재고 조정</h3>
+        <input type="text" id="modal-id" placeholder="바코드 입력 또는 스캔">
+        <input type="number" id="modal-amt" placeholder="수량 입력">
+        <div style="display:flex; gap:10px;">
+            <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
+            <button id="modal-submit" style="flex:1; padding:12px; border-radius:8px; border:none; background:var(--mint); color:white; font-weight:bold;">확인</button>
         </div>
-        <div id="sync-status" class="text-[10px] text-gray-400 font-bold">연결 대기중...</div>
-    </div>
-
-    <div class="grid grid-cols-3 gap-2 px-4 pb-4 text-center">
-        <div class="bg-slate-50 p-2 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">품목</p><p id="item-count" class="font-bold">455</p></div>
-        <div class="bg-slate-50 p-2 rounded-xl"><p class="text-[10px] text-gray-500 uppercase">총재고</p><p id="total-stock-display" class="font-bold text-teal-600">0</p></div>
-        <div class="bg-slate-50 p-2 rounded-xl"><p class="text-[10px] text-gray-500 text-red-500 uppercase">위험</p><p id="risk-count-display" class="font-bold text-red-500">0</p></div>
-    </div>
-
-    <div class="flex gap-2 overflow-x-auto px-4 pb-4 no-scrollbar">
-        <button onclick="filterCat('전체')" class="category-btn active border px-5 py-2 rounded-full text-sm font-bold shadow-sm whitespace-nowrap">전체</button>
-        <button onclick="filterCat('액자')" class="category-btn border bg-white px-5 py-2 rounded-full text-sm font-bold shadow-sm whitespace-nowrap">액자류</button>
-        <button onclick="filterCat('카드')" class="category-btn border bg-white px-5 py-2 rounded-full text-sm font-bold shadow-sm whitespace-nowrap">카드/엽서</button>
-        <button onclick="filterCat('시계')" class="category-btn border bg-white px-5 py-2 rounded-full text-sm font-bold shadow-sm whitespace-nowrap">벽시계류</button>
-        <button onclick="filterCat('주보')" class="category-btn border bg-white px-5 py-2 rounded-full text-sm font-bold shadow-sm whitespace-nowrap">주보/봉투</button>
-        <button onclick="filterCat('기타')" class="category-btn border bg-white px-5 py-2 rounded-full text-sm font-bold shadow-sm whitespace-nowrap">기타용품</button>
-    </div>
-
-    <div class="px-4 pb-4 space-y-3">
-        <input type="text" id="search" oninput="handleSearch()" placeholder="상품명 또는 바코드 검색" 
-               class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-teal-500 outline-none">
     </div>
 </div>
 
-<div id="product-list" class="p-4 space-y-3"></div>
+<div class="sticky-top">
+    <div class="header">🏠 JOYFULHOUSE</div>
+    <div class="summary">
+        <div><span>품목</span><b id="st-k">0</b></div>
+        <div><span>총재고</span><b id="st-q">0</b></div>
+        <div><span>위험</span><b id="st-d" style="color:red">0</b></div>
+    </div>
+    <div id="nav-tabs" class="nav-tabs"></div>
+    <div class="search-area"><input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색" onkeyup="render()"></div>
+    <div class="btn-group">
+        <button style="background:#22c55e" onclick="openIOModal('입고')">입고</button>
+        <button style="background:#f97316" onclick="openIOModal('출고')">출고</button>
+        <button style="background:#6366f1" onclick="alert('엑셀 업로드 기능은 준비 중입니다.')">주문서</button>
+    </div>
+</div>
+
+<div id="list"></div>
 
 <script>
-    // 1. 구글 시트 웹앱 URL (배포 후 주소를 여기에 넣으세요!)
-    const API_URL = "https://script.google.com/macros/s/AKfycbyXpW7Usg0spebIiWUOSrn8BL1SSTGWmVJNRQznDJjGNbNusmL98xEIFdpJo-USP7vi/exec";
+    // ★ 1. 새로 배포한 구글 웹 앱 URL을 여기에 넣어주세요
+    const URL = 'https://script.google.com/macros/s/AKfycbw6jOQw_7TKmlB24YrLN9IPPxATYciHzVWfBffg9jVTrzo0j2z_niykoDTF4Pz2qtvF/exec'; 
 
-    // 2. 사장님이 주신 455개 데이터 변환본
-    let masterData = [
-        // 꽃액자
-        {id:"DF55001", name:"55000꽃액자_여호와는네게", type:"액자", stock:0},
-        {id:"DF55002", name:"55000꽃액자_하늘의보고를", type:"액자", stock:0},
-        {id:"DF50001", name:"50000꽃액자_여호와는네게", type:"액자", stock:0},
-        {id:"DF50002", name:"50000꽃액자_하늘의보고를", type:"액자", stock:0},
-        {id:"DF48001", name:"48000꽃액자_사랑하는자여", type:"액자", stock:0},
-        {id:"DF48002", name:"48000꽃액자_물댄동산", type:"액자", stock:0},
-        {id:"DF45001", name:"45000꽃액자_사랑깊은약속", type:"액자", stock:0},
-        {id:"DF39001", name:"39000꽃액자_행복이가득한우리집", type:"액자", stock:0},
-        {id:"DF39002", name:"39000꽃액자_믿음의가정", type:"액자", stock:0},
-        {id:"DF39003", name:"39000꽃액자_복있는사람", type:"액자", stock:0},
-        {id:"DF39004", name:"39000꽃액자_주를기뻐하라", type:"액자", stock:0},
-        {id:"DF29001", name:"29000꽃액자_예수만섬기는", type:"액자", stock:0},
-        {id:"DF29002", name:"29000꽃액자_복주고복주며", type:"액자", stock:0},
-        {id:"DF29003", name:"29000꽃액자_평강의주께서", type:"액자", stock:0},
-        {id:"DF29004", name:"29000꽃액자_사랑하는자여", type:"액자", stock:0},
-        {id:"DF15001", name:"15000꽃액자_축복", type:"액자", stock:0},
-        {id:"DF15002", name:"15000꽃액자_사랑", type:"액자", stock:0},
-        {id:"DF15003", name:"15000꽃액자_은혜", type:"액자", stock:0},
-        {id:"DF15004", name:"15000꽃액자_기쁨", type:"액자", stock:0},
-        // 말씀수지&부조&기타액자
-        {id:"SF3009", name:"34000수채화캘리액자_여호와는", type:"액자", stock:0},
-        {id:"SF27001", name:"27000말씀액자_야베스의기도", type:"액자", stock:0},
-        {id:"SF27002", name:"27000말씀액자_물댄동산", type:"액자", stock:0},
-        {id:"SF27003", name:"27000말씀액자_여호와는나의목자", type:"액자", stock:0},
-        {id:"SF27004", name:"27000말씀액자_하나님은사랑이시라", type:"액자", stock:0},
-        {id:"SF27005", name:"27000말씀액자_예수만섬기는우리집", type:"액자", stock:0},
-        {id:"SF1901", name:"19000말씀액자_기쁨", type:"액자", stock:0},
-        {id:"SF1902", name:"19000말씀액자_사랑", type:"액자", stock:0},
-        {id:"SF1903", name:"19000말씀액자_축복", type:"액자", stock:0},
-        {id:"SF1904", name:"19000말씀액자_행복", type:"액자", stock:0},
-        {id:"SF17010", name:"17000말씀액자_사랑하는자여", type:"액자", stock:0},
-        {id:"SF17011", name:"17000말씀액자_예수만섬기는", type:"액자", stock:0},
-        {id:"SF17012", name:"17000말씀액자_하나님은사랑이시라", type:"액자", stock:0},
-        {id:"SF17013", name:"17000말씀액자_하늘의아름다운", type:"액자", stock:0},
-        {id:"SF1510", name:"15000수채화캘리_내가반드시", type:"액자", stock:0},
-        {id:"SF1511", name:"15000수채화캘리_너는물댄동산", type:"액자", stock:0},
-        {id:"SF1512", name:"15000수채화캘리_네이름을창대하게", type:"액자", stock:0},
-        {id:"SF1513", name:"15000수채화캘리_사랑하는자여", type:"액자", stock:0},
-        {id:"SF14001", name:"14000말씀액자_예수사랑", type:"액자", stock:0},
-        {id:"SF1301", name:"13000말씀액자_기쁨이샘솟는우리집", type:"액자", stock:0},
-        {id:"SF1302", name:"13000말씀액자_사랑이넘치는우리집", type:"액자", stock:0},
-        {id:"SF1303", name:"13000말씀액자_축복이넘치는우리집", type:"액자", stock:0},
-        {id:"SF1304", name:"13000말씀액자_행복이가득한우리집", type:"액자", stock:0},
-        {id:"SF20001", name:"20000말씀입체액자_나의힘이되신", type:"액자", stock:0},
-        {id:"SF20002", name:"20000말씀입체액자_주께서내게", type:"액자", stock:0},
-        {id:"SF20003", name:"20000말씀입체액자_아무것도", type:"액자", stock:0},
-        {id:"SF20004", name:"20000말씀입체액자_여호와는네게", type:"액자", stock:0},
-        // 캔버스액자
-        {id:"KCP2501", name:"캔버스아트말씀액자(小)_피아노/오렌지", type:"액자", stock:0},
-        {id:"KCP2502", name:"캔버스아트말씀액자(小)_사랑이풍성/그린", type:"액자", stock:0},
-        {id:"KCP2503", name:"캔버스아트말씀액자(小)_집/핑크", type:"액자", stock:0},
-        {id:"KCP2504", name:"캔버스캘리말씀액자(小)_여호와는", type:"액자", stock:0},
-        {id:"KCP2505", name:"캔버스캘리말씀액자(小)_사랑/수채화꽃", type:"액자", stock:0},
-        {id:"KCP3501", name:"캔버스아트말씀액자(中)_피아노/오렌지", type:"액자", stock:0},
-        {id:"KCP3502", name:"캔버스아트말씀액자(中)_사랑이풍성/그린", type:"액자", stock:0},
-        {id:"KCP5501", name:"캔버스아트말씀액자(大)_피아노/오렌지", type:"액자", stock:0},
-        {id:"KCP5502", name:"캔버스아트말씀액자(大)_사랑이풍성/그린", type:"액자", stock:0},
-        // 엽서 및 카드
-        {id:"PS15006", name:"5000엽서세트_축복의동산", type:"카드", stock:0},
-        {id:"PS15007", name:"5000엽서세트_예수사랑", type:"카드", stock:0},
-        {id:"PC50001", name:"5000엽서_예수사랑/가나혼인잔치", type:"카드", stock:0},
-        {id:"PC20001", name:"200엽서_예수사랑/1.가나혼인잔치", type:"카드", stock:0},
-        {id:"NKC0801", name:"800카드_초대합니다", type:"카드", stock:0},
-        {id:"NKC926", name:"900카드_(꽃)축복/해바라기", type:"카드", stock:0},
-        {id:"NKC1001", name:"1000카드_축하/오병이어", type:"카드", stock:0},
-        // 예배상 및 머그컵
-        {id:"KW460001", name:"46000액자테이블", type:"기타", stock:0},
-        {id:"KM15901", name:"15900GODBLESS슬림텀블러_블랙", type:"기타", stock:0},
-        // 시계류
-        {id:"KC2401", name:"24000시계/원형_예수사랑(와인)", type:"시계", stock:0},
-        {id:"KC3201", name:"기쁨말씀벽시계_항상기뻐하라", type:"시계", stock:0},
-        {id:"KC9501", name:"9500방수흡착시계_항상기뻐하라", type:"시계", stock:0},
-        // 주보 및 봉투
-        {id:"EJ401", name:"기쁨해외4면주보_401", type:"주보", stock:0},
-        {id:"KJ-421", name:"A4주보(4면)-421", type:"주보", stock:0},
-        {id:"JO1601", name:"예수사랑헌금봉투_감사", type:"주보", stock:0},
-        {id:"JO1701", name:"패브릭헌금봉투_감사", type:"주보", stock:0},
-        {id:"JO2501", name:"마음담은봉투_감사", type:"주보", stock:0},
-        {id:"신년감사01", name:"신년감사01", type:"주보", stock:0}
-        // (지면상 생략되었으나 사장님의 455개 전 품목이 로직에 포함되도록 구성됨)
-    ];
+    let inventory = [];
 
-    // 3. 재고 상태 신호등 로직 (사장님 기준 적용)
-    function getStatusColor(item) {
-        const s = item.stock;
-        const t = item.type;
-        let green, red;
-
-        if (t === '시계') { green = 10; red = 7; }
-        else if (t === '주보') { green = 15; red = 10; }
-        else { green = 10; red = 5; } // 액자 및 기타
-
-        if (s >= green) return '#22c55e'; // 🟢 정상
-        if (s < red) return '#ef4444';    // 🔴 위험
-        return '#eab308';                 // 🟡 주의
-    }
-
-    // 4. 화면 렌더링
-    function render(data) {
-        const listDiv = document.getElementById('product-list');
-        listDiv.innerHTML = data.map(item => `
-            <div class="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-100">
-                <div class="flex-1">
-                    <div class="flex items-center">
-                        <span class="status-dot" style="background-color: ${getStatusColor(item)}"></span>
-                        <span class="text-[10px] font-mono text-gray-400">${item.id}</span>
-                    </div>
-                    <span class="text-[15px] font-bold text-gray-700 block mt-1">${item.name}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-xl font-black w-10 text-center" style="color: ${getStatusColor(item)}">${item.stock}</span>
-                </div>
-            </div>
-        `).join('');
-
-        // 상단 통계 업데이트
-        const total = data.reduce((acc, cur) => acc + cur.stock, 0);
-        const risks = data.filter(item => {
-            const s = item.stock;
-            const t = item.type;
-            if(t === '시계') return s < 7;
-            if(t === '주보') return s < 10;
-            return s < 5;
-        }).length;
-        document.getElementById('total-stock-display').innerText = total.toLocaleString();
-        document.getElementById('risk-count-display').innerText = risks;
-    }
-
-    // 5. 시트 데이터 가져오기
-    async function fetchStock() {
-        if(API_URL.includes("여기에")) return;
-        const statusEl = document.getElementById('sync-status');
-        statusEl.innerText = "🔄 동기화 중...";
+    // [핵심] fetch를 사용하여 PC 로딩 성공률을 높입니다.
+    async function load() {
         try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            masterData.forEach(item => {
-                const match = data.find(s => s.code === item.id);
-                if(match) item.stock = match.stock;
-            });
-            statusEl.innerText = "✅ 연결됨";
-            statusEl.style.color = "#22c55e";
-            render(masterData);
-        } catch (e) {
-            statusEl.innerText = "❌ 연결 실패";
-            statusEl.style.color = "#ef4444";
+            const response = await fetch(URL);
+            const rawData = await response.json();
+            processData(rawData);
+        } catch (err) {
+            console.error(err);
+            // fetch가 막힐 경우를 대비한 2차 우회 시도
+            const script = document.createElement('script');
+            script.src = URL + "?callback=processData&t=" + Date.now();
+            document.body.appendChild(script);
         }
     }
 
-    // 6. 필터 및 검색
-    function filterCat(cat) {
-        document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active', 'bg-yellow-400', 'text-white'));
-        event.target.classList.add('active', 'bg-yellow-400', 'text-white');
-        const filtered = (cat === '전체') ? masterData : masterData.filter(i => i.type.includes(cat));
-        render(filtered);
+    function processData(rows) {
+        inventory = [];
+        let currentCat = "기타";
+        rows.forEach((row, i) => {
+            if(i === 0) return; // 첫 줄 헤더 제외
+            const val = String(row[0] || '').trim();
+            if (val.startsWith('[') && val.endsWith(']')) {
+                currentCat = val.replace(/[\[\]]/g, '');
+            } else if (row[0] && row[1] && row[0] !== "바코드") {
+                inventory.push({ "바코드": String(row[0]), "제품명": String(row[1]), "재고수량": parseInt(row[2]) || 0, "__cat": currentCat });
+            }
+        });
+        renderTabs(); render(); updateStats();
+        document.getElementById('loader').style.display = 'none';
     }
 
-    function handleSearch() {
+    function renderTabs() {
+        const cats = [...new Set(inventory.map(i => i['__cat']))];
+        document.getElementById('nav-tabs').innerHTML = cats.map(c => `<button class="tab-btn" onclick="render('${c}')">${c}</button>`).join('');
+    }
+
+    function render(cat = null) {
         const q = document.getElementById('search').value.toLowerCase();
-        const filtered = masterData.filter(i => i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q));
-        render(filtered);
+        let filtered = inventory;
+        if(q) filtered = inventory.filter(i => i.제품명.toLowerCase().includes(q) || i.바코드.includes(q));
+        else if(cat) filtered = inventory.filter(i => i.__cat === cat);
+        
+        document.getElementById('list').innerHTML = filtered.map(i => `
+            <div class="item-row">
+                <div><span class="barcode-tag">${i.바코드}</span><span class="name">${i.제품명}</span></div>
+                <div class="stock-control">
+                    <button onclick="update('${i.바코드}', -1)">-</button>
+                    <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
+                    <button onclick="update('${i.바코드}', 1)" style="color:var(--deep-mint)">+</button>
+                </div>
+            </div>`).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
     }
 
-    window.onload = () => {
-        render(masterData);
-        fetchStock();
-    };
+    function openIOModal(type) {
+        document.getElementById('modal-title').innerText = type;
+        document.getElementById('modal-id').value = "";
+        document.getElementById('modal-amt').value = "";
+        document.getElementById('modal-submit').onclick = () => {
+            const id = document.getElementById('modal-id').value;
+            const amt = parseInt(document.getElementById('modal-amt').value) * (type === '출고' ? -1 : 1);
+            if(id && amt) { update(id, amt); closeModal(); }
+        };
+        document.getElementById('io-modal').style.display = 'flex';
+        document.getElementById('modal-id').focus();
+    }
+
+    function closeModal() { document.getElementById('io-modal').style.display = 'none'; }
+
+    async function update(id, amt) {
+        const item = inventory.find(i => String(i.바코드).trim() === String(id).trim());
+        if(item) {
+            item.재고수량 += amt;
+            render(); updateStats();
+            fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: amt}]) });
+        } else { alert("바코드를 확인하세요."); }
+    }
+
+    function updateStats() {
+        document.getElementById('st-q').innerText = inventory.reduce((s, i) => s + i.재고수량, 0).toLocaleString();
+        document.getElementById('st-k').innerText = inventory.length;
+        document.getElementById('st-d').innerText = inventory.filter(i => i.재고수량 < 5).length;
+    }
+
+    window.onload = load;
 </script>
 </body>
 </html>
