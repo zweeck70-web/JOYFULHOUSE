@@ -7,7 +7,7 @@
     <style>
         :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
         body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
-        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); }
         .header { padding: 15px 16px 5px; font-size: 24px; font-weight: 900; color: var(--mint); }
         .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
         .summary b { font-size: 22px; display: block; font-weight: 800; }
@@ -19,23 +19,19 @@
         .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
         .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; cursor: pointer; }
         
-        /* 목록 아이템 (요청하신 대로 불필요한 헤더는 렌더링에서 제외) */
+        /* 목록 아이템 (헤더 칸 제거됨) */
         .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-        .item-info { display: flex; align-items: center; gap: 8px; overflow: hidden; }
-        .barcode-tag { font-family: monospace; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; flex-shrink: 0; }
-        .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .barcode-tag { font-family: monospace; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; }
+        .name { font-size: 14px; font-weight: 600; margin-left: 8px; }
         .stock-control { display: flex; align-items: center; gap: 10px; }
         .stock-val { font-size: 18px; font-weight: 800; min-width: 35px; text-align: center; }
         .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
         
-        /* 팝업 모달 */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; }
-        .modal-content input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
-        .modal-btns { display: flex; gap: 10px; }
-        .modal-btns button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
-
-        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
+        .modal-content input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -47,9 +43,9 @@
         <h3 id="modal-title" style="text-align:center;">재고 조정</h3>
         <input type="text" id="modal-id" placeholder="바코드 입력 또는 스캔">
         <input type="number" id="modal-amt" placeholder="수량 입력">
-        <div class="modal-btns">
-            <button onclick="closeModal()" style="background:#f1f5f9; color:#475569;">취소</button>
-            <button id="modal-submit" style="background:var(--mint); color:white;">확인</button>
+        <div style="display:flex; gap:10px;">
+            <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
+            <button id="modal-submit" style="flex:1; padding:12px; border-radius:8px; border:none; background:var(--mint); color:white; font-weight:bold;">확인</button>
         </div>
     </div>
 </div>
@@ -73,37 +69,36 @@
 <div id="list"></div>
 
 <script>
-    // ★ 새로 배포한 주소를 여기에 넣어주세요!
-    const URL = 'https://script.google.com/macros/s/AKfycbzsgMpn7GQsvprMyRp-F0OZ4HsD8JXpV8cwF8bAmUqQ6Yvf7XGmMxaJVhik3WN-hwBbhg/exec'; 
+    // ★ 1. 새로 배포한 구글 웹 앱 URL을 여기에 넣어주세요
+    const URL = 'https://script.google.com/macros/s/AKfycbyTHo8hBw9-oaNC7bmftRTdn_SDGgQb0s3-om9WKcMVjJ-MgcOFc8IwdgEstS6DxXVgyQ/exec'; 
 
     let inventory = [];
 
-    function load() {
-        const script = document.createElement('script');
-        script.src = URL + "?callback=handleData&t=" + Date.now();
-        document.body.appendChild(script);
-        
-        // PC 로딩 실패 대비 7초 후 강제 메시지 제거 시도
-        setTimeout(() => { if(inventory.length === 0) document.getElementById('loader').innerText = "연결 지연... 잠시만 기다려주세요."; }, 7000);
+    // [핵심] fetch를 사용하여 PC 로딩 성공률을 높입니다.
+    async function load() {
+        try {
+            const response = await fetch(URL);
+            const rawData = await response.json();
+            processData(rawData);
+        } catch (err) {
+            console.error(err);
+            // fetch가 막힐 경우를 대비한 2차 우회 시도
+            const script = document.createElement('script');
+            script.src = URL + "?callback=processData&t=" + Date.now();
+            document.body.appendChild(script);
+        }
     }
 
-    function handleData(rawRows) {
+    function processData(rows) {
         inventory = [];
         let currentCat = "기타";
-        
-        rawRows.forEach((row, index) => {
-            if(index === 0) return; // 첫 줄(헤더)은 데이터에서 제외
-            
+        rows.forEach((row, i) => {
+            if(i === 0) return; // 첫 줄 헤더 제외
             const val = String(row[0] || '').trim();
             if (val.startsWith('[') && val.endsWith(']')) {
                 currentCat = val.replace(/[\[\]]/g, '');
-            } else if (row[0] && row[1] && row[0] !== "바코드") { // '바코드'라는 글자가 적힌 행도 제외
-                inventory.push({ 
-                    "바코드": String(row[0]), 
-                    "제품명": String(row[1]), 
-                    "재고수량": parseInt(row[2]) || 0, 
-                    "__cat": currentCat 
-                });
+            } else if (row[0] && row[1] && row[0] !== "바코드") {
+                inventory.push({ "바코드": String(row[0]), "제품명": String(row[1]), "재고수량": parseInt(row[2]) || 0, "__cat": currentCat });
             }
         });
         renderTabs(); render(); updateStats();
@@ -123,10 +118,7 @@
         
         document.getElementById('list').innerHTML = filtered.map(i => `
             <div class="item-row">
-                <div class="item-info">
-                    <span class="barcode-tag">${i.바코드}</span>
-                    <span class="name">${i.제품명}</span>
-                </div>
+                <div><span class="barcode-tag">${i.바코드}</span><span class="name">${i.제품명}</span></div>
                 <div class="stock-control">
                     <button onclick="update('${i.바코드}', -1)">-</button>
                     <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
@@ -148,7 +140,7 @@
         document.getElementById('modal-id').focus();
     }
 
-    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+    function closeModal() { document.getElementById('io-modal').style.display = 'none'; }
 
     async function update(id, amt) {
         const item = inventory.find(i => String(i.바코드).trim() === String(id).trim());
@@ -156,7 +148,7 @@
             item.재고수량 += amt;
             render(); updateStats();
             fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: amt}]) });
-        } else { alert("찾을 수 없는 바코드입니다."); }
+        } else { alert("바코드를 확인하세요."); }
     }
 
     function updateStats() {
