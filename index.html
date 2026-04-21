@@ -9,26 +9,29 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
-        .cat-btn { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 8px 18px; font-weight: bold; font-size: 13px; color: #64748b; white-space: nowrap; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .cat-btn { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 8px 18px; font-weight: bold; font-size: 13px; color: #64748b; white-space: nowrap; transition: 0.2s; }
         .cat-btn.active { background: #eab308; color: white; border-color: #eab308; }
+        #loading { display:none; position: fixed; inset:0; background:rgba(0,0,0,0.1); z-index:100; align-items:center; justify-content:center; }
     </style>
 </head>
 <body>
+
+<div id="loading"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-500"></div></div>
 
 <div class="sticky top-0 z-50 bg-white shadow-sm">
     <div class="p-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
             <span class="text-2xl">🏠</span>
-            <h1 class="text-xl font-black text-teal-400">JOYFULHOUSE</h1>
+            <h1 class="text-xl font-black text-teal-400 italic">JOYFULHOUSE</h1>
         </div>
-        <button onclick="fetchLiveStock()" class="text-[10px] bg-slate-100 px-3 py-1 rounded-full text-slate-500">🔄 동기화</button>
+        <button onclick="fetchLiveStock()" class="text-xs font-bold bg-teal-50 px-4 py-2 rounded-full text-teal-600 border border-teal-100 active:bg-teal-100">🔄 시트 동기화</button>
     </div>
 
     <div class="grid grid-cols-3 gap-2 px-4 pb-4 text-center border-b text-slate-700">
-        <div><p class="text-[10px] text-gray-400 uppercase">품목</p><p id="count-ui" class="font-bold">455</p></div>
-        <div><p class="text-[10px] text-gray-400 uppercase">총재고</p><p id="total-ui" class="font-bold">0</p></div>
-        <div><p class="text-[10px] text-gray-400 uppercase text-red-500">위험</p><p id="risk-ui" class="font-bold text-red-500">0</p></div>
+        <div><p class="text-[10px] text-gray-400 uppercase">전체 품목</p><p id="count-ui" class="font-bold text-lg">455</p></div>
+        <div><p class="text-[10px] text-gray-400 uppercase">현재 총재고</p><p id="total-ui" class="font-bold text-lg text-teal-600">0</p></div>
+        <div><p class="text-[10px] text-gray-400 uppercase text-red-400">보충 필요</p><p id="risk-ui" class="font-bold text-lg text-red-500">0</p></div>
     </div>
 
     <div class="flex gap-2 overflow-x-auto p-4 no-scrollbar">
@@ -41,24 +44,25 @@
         <button onclick="filterCat('봉투')" class="cat-btn">봉투류</button>
     </div>
 
-    <div class="px-4 pb-4 space-y-3">
+    <div class="px-4 pb-4">
         <input type="text" id="search" oninput="handleSearch()" placeholder="상품명 또는 바코드 검색" 
-               class="w-full bg-[#f1f5f9] border-none rounded-xl py-2.5 px-4 text-sm outline-none">
-        <div class="grid grid-cols-3 gap-2">
-            <button class="bg-[#22c55e] text-white font-bold py-3 rounded-lg shadow-sm active:scale-95">입고</button>
-            <button class="bg-[#f97316] text-white font-bold py-3 rounded-lg shadow-sm active:scale-95">출고</button>
-            <button class="bg-[#6366f1] text-white font-bold py-3 rounded-lg shadow-sm active:scale-95">주문서</button>
-        </div>
+               class="w-full bg-[#f1f5f9] border-none rounded-xl py-3 px-4 text-sm outline-none focus:ring-2 ring-teal-400/50">
     </div>
 </div>
 
-<div id="list" class="divide-y"></div>
+<div id="list" class="divide-y divide-slate-50 pb-20"></div>
+
+<div class="fixed bottom-4 left-4 right-4 grid grid-cols-3 gap-2 pointer-events-none">
+    <button class="pointer-events-auto bg-green-500 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95">입고</button>
+    <button class="pointer-events-auto bg-orange-500 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95">출고</button>
+    <button class="pointer-events-auto bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95">주문</button>
+</div>
 
 <script>
-    // 🔗 1. 구글 스크립트 주소를 여기에 넣으세요!
+    // 🔗 [설정] 구글 앱스 스크립트 배포 주소를 아래 따옴표 안에 넣어주세요!
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEYXkOAaoTZmWi9H2Cgeh15-X0WSOo02VrRP-MWjYkRH_k3CDidstO1mLI_vU9AQrp/exec";
 
-    // 📦 2. 사장님의 455개 전체 데이터 (제가 직접 다 채워넣었습니다)
+    // 📦 데이터베이스 (사장님의 455개 전체 데이터 탑재됨)
     const rawData = `[꽃액자]
 DF55001,55000꽃액자_여호와는네게,0
 DF55002,55000꽃액자_하늘의보고를,0
@@ -530,52 +534,54 @@ JSS7502,JSS7502_핸드폰거치대(블랙),0`;
     let inventory = [];
     let currentCatFilter = "전체";
 
-    // 데이터 초기화
     function init() {
         let cat = "기타";
         rawData.split('\n').forEach(line => {
-            if(line.startsWith('[')) cat = line.replace('[','').replace(']','');
-            else if(line.includes(',')) {
-                const [id, name, stock] = line.split(',');
-                inventory.push({ id:id.trim(), name:name.trim(), stock:parseInt(stock)||0, cat:cat });
+            line = line.trim();
+            if(!line) return;
+            if(line.startsWith('[')) {
+                cat = line.replace('[','').replace(']','');
+            } else if(line.includes(',')) {
+                const parts = line.split(',');
+                inventory.push({ 
+                    id: parts[0].trim(), 
+                    name: parts[1].trim(), 
+                    stock: parseInt(parts[2]) || 0, 
+                    cat: cat 
+                });
             }
         });
         render(inventory);
     }
 
-    // 신호등 색상 로직
     function getDotColor(item) {
         const s = item.stock;
-        if (item.cat.includes('시계')) {
-            if (s >= 10) return '#22c55e'; if (s < 7) return '#ef4444'; return '#eab308';
-        } else if (item.cat.includes('주보')) {
-            if (s >= 15) return '#22c55e'; if (s < 10) return '#ef4444'; return '#eab308';
-        } else { // 액자 및 나머지
-            if (s >= 10) return '#22c55e'; if (s < 5) return '#ef4444'; return '#eab308';
-        }
+        if (item.cat.includes('시계')) return s >= 10 ? '#22c55e' : (s < 7 ? '#ef4444' : '#eab308');
+        if (item.cat.includes('주보')) return s >= 15 ? '#22c55e' : (s < 10 ? '#ef4444' : '#eab308');
+        return s >= 10 ? '#22c55e' : (s < 5 ? '#ef4444' : '#eab308');
     }
 
     function render(data) {
         const list = document.getElementById('list');
         list.innerHTML = data.map(item => `
-            <div class="bg-white p-4 flex justify-between items-center">
-                <div>
-                    <div class="flex items-center">
+            <div class="bg-white p-4 flex justify-between items-center transition-all active:bg-slate-50">
+                <div class="flex-1 pr-4">
+                    <div class="flex items-center gap-1 mb-1">
                         <span class="status-dot" style="background-color:${getDotColor(item)}"></span>
-                        <span class="text-[10px] bg-slate-100 text-slate-400 px-1 font-mono rounded">${item.id}</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 font-mono rounded tracking-tighter">${item.id}</span>
+                        <span class="text-[10px] text-slate-400 font-medium">${item.cat}</span>
                     </div>
-                    <span class="text-[14px] font-bold text-slate-700 block mt-0.5">${item.name}</span>
+                    <span class="text-[15px] font-bold text-slate-800 block truncate">${item.name}</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button class="w-10 h-10 border rounded-lg text-slate-300">-</button>
+                <div class="flex items-center gap-3">
+                    <button class="w-10 h-10 border border-slate-200 rounded-xl text-slate-300 font-bold active:bg-slate-100">-</button>
                     <span class="w-6 text-center text-xl font-black ${item.stock < 5 ? 'text-red-500' : 'text-teal-500'}">${item.stock}</span>
-                    <button class="w-10 h-10 border rounded-lg text-teal-500">+</button>
+                    <button class="w-10 h-10 border border-slate-200 rounded-xl text-teal-500 font-bold active:bg-teal-50">+</button>
                 </div>
             </div>
         `).join('');
 
-        // 통계 계산
-        document.getElementById('total-ui').innerText = inventory.reduce((a,b)=>a+b.stock, 0);
+        document.getElementById('total-ui').innerText = inventory.reduce((a,b)=>a+b.stock, 0).toLocaleString();
         document.getElementById('risk-ui').innerText = inventory.filter(i => {
             if(i.cat.includes('시계')) return i.stock < 7;
             if(i.cat.includes('주보')) return i.stock < 10;
@@ -584,21 +590,33 @@ JSS7502,JSS7502_핸드폰거치대(블랙),0`;
     }
 
     async function fetchLiveStock() {
-        if(!SCRIPT_URL.startsWith('http')) return alert("스크립트 주소를 넣어주세요!");
+        if(!SCRIPT_URL || SCRIPT_URL.includes("여기에")) {
+            alert("먼저 구글 스크립트 주소를 코드에 넣어주세요!");
+            return;
+        }
+        
+        document.getElementById('loading').style.display = 'flex';
         try {
             const res = await fetch(SCRIPT_URL);
             const live = await res.json();
+            
             inventory.forEach(i => {
-                const found = live.find(l => l.바코드 === i.id);
-                if(found) i.stock = found.재고수량;
+                const found = live.find(l => String(l.바코드).trim() === String(i.id).trim());
+                if(found) i.stock = parseInt(found.재고) || parseInt(found.재고수량) || 0;
             });
+            
             render(inventory);
-        } catch(e) { alert("연결 실패!"); }
+            alert("동기화 성공!");
+        } catch(e) { 
+            alert("데이터를 가져오지 못했습니다. 스크립트 주소나 권한 설정을 확인해주세요."); 
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
     }
 
     function filterCat(c) {
         currentCatFilter = c;
-        document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(c)));
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.innerText === c));
         const filtered = c === '전체' ? inventory : inventory.filter(i => i.cat.includes(c));
         render(filtered);
     }
