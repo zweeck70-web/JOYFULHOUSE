@@ -10,55 +10,25 @@
         body { font-family: -apple-system, sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
         .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .header { padding: 15px 16px 5px; font-size: 24px; font-weight: 900; color: var(--mint); }
-        .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; }
+        .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
         .summary b { font-size: 20px; display: block; font-weight: 800; }
         .summary span { font-size: 11px; color: #64748b; }
-        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fff; scrollbar-width: none; border-bottom: 1px solid #f1f5f9; }
-        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 6px 14px; border-radius: 15px; font-size: 12px; font-weight: bold; color: #fff; }
-        .search-area { padding: 12px 16px; background: #fff; }
-        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; -webkit-appearance: none; }
-        .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
+        .btn-group { display: flex; gap: 6px; padding: 12px 16px; background: #fff; }
         .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; cursor: pointer; }
         .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-        .barcode-tag { font-family: monospace; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; }
-        .name { font-size: 14px; font-weight: 600; margin-left: 8px; }
-        .stock-control { display: flex; align-items: center; gap: 10px; }
-        .stock-val { font-size: 18px; font-weight: 800; min-width: 35px; text-align: center; }
-        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; }
+        .name { font-size: 14px; font-weight: 600; }
+        .stock-val { font-size: 18px; font-weight: 800; min-width: 40px; text-align: center; }
+        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; }
-        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="loader">
-    <div id="msg">데이터 동기화 중...</div>
-    <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; border-radius:8px; border:1px solid #ddd; background:#fff;">새로고침</button>
-</div>
-
-<div id="io-modal" class="modal">
-    <div class="modal-content">
-        <h3 id="modal-title" style="text-align:center;">재고 조정</h3>
-        <input type="text" id="modal-id" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" placeholder="바코드 입력">
-        <input type="number" id="modal-amt" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;" placeholder="수량 입력">
-        <div style="display:flex; gap:10px;">
-            <button onclick="closeModal()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#eee;">취소</button>
-            <button id="modal-submit" style="flex:1; padding:12px; border:none; border-radius:8px; background:var(--mint); color:white; font-weight:bold;">확인</button>
-        </div>
-    </div>
-</div>
-
-<div id="file-modal" class="modal">
-    <div class="modal-content">
-        <h3 style="text-align:center;">주문서 업로드</h3>
-        <p style="font-size:12px; color:gray; text-align:center; margin-bottom:15px;">A열: 바코드 / B열: 수량</p>
-        <input type="file" id="excel-input" style="width:100%; margin-bottom:20px;" accept=".xlsx, .xls">
-        <div style="display:flex; gap:10px;">
-            <button onclick="closeModal()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#eee;">취소</button>
-            <button onclick="handleExcel()" style="flex:1; padding:12px; border:none; border-radius:8px; background:#6366f1; color:white; font-weight:bold;">파일 처리</button>
-        </div>
-    </div>
+    <div id="status">연결 수립 중...</div>
+    <p id="sub-status" style="font-size:12px; color:gray; margin-top:10px;">455개 품목 데이터를 동기화하고 있습니다.</p>
+    <button onclick="forceLoad()" style="margin-top:20px; padding:10px 20px; border-radius:8px; background:var(--mint); color:white; border:none; font-weight:bold;">데이터 강제 로드</button>
 </div>
 
 <div class="sticky-top">
@@ -68,8 +38,6 @@
         <div><span>총재고</span><b id="st-q">0</b></div>
         <div><span>위험</span><b id="st-d" style="color:red">0</b></div>
     </div>
-    <div id="nav-tabs" class="nav-tabs"></div>
-    <div class="search-area"><input type="text" id="search" placeholder="🔍 검색어 입력" onkeyup="render()"></div>
     <div class="btn-group">
         <button style="background:#22c55e" onclick="openIOModal('입고')">입고</button>
         <button style="background:#f97316" onclick="openIOModal('출고')">출고</button>
@@ -80,19 +48,20 @@
 <div id="list"></div>
 
 <script>
-    const URL = 'https://script.google.com/macros/s/AKfycbzUUtFWZWnnIyT6hrw8VEKQsltleKSNaT_yTso53Ac-9iwNHvYoqwSPiEjtPddWqSrNpQ/exec'; // 여기에 주소 넣어주세요
+    // ★ 1. 사장님의 구글 웹 앱 URL을 여기에 넣어주세요!
+    const URL = 'https://script.google.com/macros/s/AKfycbymwnG8rr2zY7JoSJkaKBejzoblKnfEzIpZ7fBN18lygrtfvK3w_GVsvJZ3-2cSl_7Dwg/exec'; 
 
     let inventory = [];
 
-    function load() {
-        // 모바일 브라우저 캐시 방지를 위해 랜덤값 더 강력하게 추가
+    // [강제 로딩 함수]
+    function forceLoad() {
         const script = document.createElement('script');
-        script.src = `${URL}?callback=processData&v=${Date.now()}`;
+        script.src = URL + "?callback=processData&t=" + Date.now();
         document.body.appendChild(script);
     }
 
-    function processData(rows) {
-        if(!rows) return;
+    function processData(res) {
+        const rows = res.rows;
         inventory = [];
         let currentCat = "기타";
         rows.forEach((row, i) => {
@@ -100,71 +69,48 @@
             const val = String(row[0] || '').trim();
             if (val.startsWith('[') && val.endsWith(']')) {
                 currentCat = val.replace(/[\[\]]/g, '');
-            } else if (row[0] && row[1] && row[0] !== "바코드") {
+            } else if (row[0] && row[1]) {
                 inventory.push({ "바코드": String(row[0]), "제품명": String(row[1]), "재고수량": parseInt(row[2]) || 0, "__cat": currentCat });
             }
         });
-        renderTabs(); render(); updateStats();
+        render(); updateStats();
         document.getElementById('loader').style.display = 'none';
     }
 
-    /* 주문서 처리 엔진 (모바일 호환성 강화) */
-    function handleExcel() {
-        const file = document.getElementById('excel-input').files[0];
-        if (!file) { alert("파일이 선택되지 않았습니다."); return; }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                // 모바일에서도 메모리 부족 없이 읽도록 최적화
-                const workbook = XLSX.read(data, {type: 'array', cellDates: true, cellText: false});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
-                
-                let updates = [];
-                rows.forEach((row, idx) => {
-                    if(idx === 0 || !row[0]) return;
-                    const b = String(row[0]).trim();
-                    const q = parseInt(row[1]) || 0;
-                    if(b && q !== 0) updates.push({id: b, amount: -q});
-                });
-
-                if(updates.length > 0) {
-                    if(confirm(`${updates.length}건의 주문을 처리할까요?`)) {
-                        sendUpdate(updates);
-                    }
-                } else {
-                    alert("데이터를 찾을 수 없습니다. A열(바코드), B열(수량)을 확인해주세요.");
-                }
-            } catch (err) {
-                alert("엑셀 읽기 실패: " + err.message);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    function renderTabs() {
-        const cats = [...new Set(inventory.map(i => i['__cat']))];
-        document.getElementById('nav-tabs').innerHTML = `<button class="tab-btn" style="background:#64748b" onclick="render()">전체</button>` + 
-            cats.map(c => `<button class="tab-btn" onclick="render('${c}')">${c}</button>`).join('');
-    }
-
-    function render(cat = null) {
-        const q = document.getElementById('search').value.toLowerCase();
-        let filtered = inventory;
-        if(q) filtered = inventory.filter(i => String(i.제품명).toLowerCase().includes(q) || String(i.바코드).includes(q));
-        else if(cat) filtered = inventory.filter(i => i.__cat === cat);
-        
-        document.getElementById('list').innerHTML = filtered.map(i => `
+    function render() {
+        document.getElementById('list').innerHTML = inventory.map(i => `
             <div class="item-row">
-                <div><span class="barcode-tag">${i.바코드}</span><span class="name">${i.제품명}</span></div>
-                <div class="stock-control">
-                    <button onclick="update('${i.바코드}', -1)">-</button>
-                    <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
-                    <button onclick="update('${i.바코드}', 1)" style="color:var(--deep-mint)">+</button>
-                </div>
-            </div>`).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
+                <div><small style="color:#94a3b8">${i.바코드}</small><div class="name">${i.제품명}</div></div>
+                <div class="stock-val">${i.재고수량}</div>
+            </div>`).join('');
+    }
+
+    // 주문서 처리
+    function openFileModal() { 
+        // 엑셀 라이브러리가 잘 로드되었는지 확인
+        if(typeof XLSX === 'undefined') {
+            alert("라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+            return;
+        }
+        // ... (기존 주문서 팝업 로직)
+        alert("주문서 파일을 선택해주세요.");
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.xlsx';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const data = new Uint8Array(ev.target.result);
+                const wb = XLSX.read(data, {type:'array'});
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1});
+                let updates = [];
+                rows.forEach((r, idx) => { if(idx > 0 && r[0]) updates.push({id:String(r[0]), amount:-(parseInt(r[1])||0)}); });
+                if(updates.length > 0) sendUpdate(updates);
+            };
+            reader.readAsArrayBuffer(file);
+        };
+        input.click();
     }
 
     async function sendUpdate(list) {
@@ -172,31 +118,17 @@
             const item = inventory.find(i => String(i.바코드).trim() === u.id);
             if(item) item.재고수량 += u.amount;
         });
-        render(); updateStats(); closeModal();
+        render(); updateStats();
         fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(list) });
     }
 
-    function openFileModal() { document.getElementById('file-modal').style.display = 'flex'; }
-    function openIOModal(type) {
-        document.getElementById('modal-title').innerText = type;
-        document.getElementById('modal-id').value = "";
-        document.getElementById('modal-amt').value = "";
-        document.getElementById('modal-submit').onclick = () => {
-            const id = document.getElementById('modal-id').value.trim();
-            const amt = parseInt(document.getElementById('modal-amt').value) * (type === '출고' ? -1 : 1);
-            if(id && amt) sendUpdate([{id: id, amount: amt}]);
-        };
-        document.getElementById('io-modal').style.display = 'flex';
-    }
-    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-    function update(id, amt) { sendUpdate([{id: String(id).trim(), amount: amt}]); }
     function updateStats() {
         document.getElementById('st-q').innerText = inventory.reduce((s, i) => s + i.재고수량, 0).toLocaleString();
         document.getElementById('st-k').innerText = inventory.length;
         document.getElementById('st-d').innerText = inventory.filter(i => i.재고수량 < 5).length;
     }
 
-    window.onload = load;
+    window.onload = forceLoad;
 </script>
 </body>
 </html>
