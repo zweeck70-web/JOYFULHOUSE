@@ -12,36 +12,29 @@
         .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
         .summary b { font-size: 22px; display: block; font-weight: 800; }
         .summary span { font-size: 11px; color: #64748b; font-weight: bold; }
-        
-        /* 1. 검색창 위 머스타드색 품목별 버튼 */
         .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fff; scrollbar-width: none; }
         .nav-tabs::-webkit-scrollbar { display: none; }
         .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; }
-
         .search-area { padding: 12px 16px; background: #fff; }
         input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; }
-        
-        /* 2. 입고, 출고, 주문서 버튼 세트 */
         .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
         .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; font-size: 13px; }
-
         .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
         .item-info { display: flex; align-items: center; gap: 8px; overflow: hidden; }
-        
-        /* 3. 제품명 왼쪽 바코드 표기 */
         .barcode-tag { font-family: monospace; font-size: 11px; font-weight: bold; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; flex-shrink: 0; }
         .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
         .stock-control { display: flex; align-items: center; gap: 10px; }
         .stock-val { font-size: 18px; font-weight: 800; width: 40px; text-align: center; }
         .stock-control button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; }
-        
-        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="loader">데이터 연결 중...</div>
+<div id="loader">
+    <div>데이터 연결 중...</div>
+    <button onclick="location.reload()" style="margin-top:20px; padding:10px; border-radius:5px; border:1px solid #ccc; background:#fff;">새로고침</button>
+</div>
 
 <div class="sticky-top">
     <div class="header">🏠 JOYFULHOUSE</div>
@@ -53,17 +46,17 @@
     <div id="nav-tabs" class="nav-tabs"></div>
     <div class="search-area"><input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색" onkeyup="render()"></div>
     <div class="btn-group">
-        <button style="background:#22c55e" onclick="alert('목록의 + 버튼으로 입고하세요')">입고</button>
-        <button style="background:#f97316" onclick="alert('목록의 - 버튼으로 출고하세요')">출고</button>
-        <button style="background:#6366f1" onclick="alert('주문서 엑셀 파일을 선택하세요')">주문서</button>
+        <button style="background:#22c55e" onclick="alert('입고하실 품목의 + 버튼을 누르세요')">입고</button>
+        <button style="background:#f97316" onclick="alert('출고하실 품목의 - 버튼을 누르세요')">출고</button>
+        <button style="background:#6366f1" onclick="alert('준비 중인 기능입니다')">주문서</button>
     </div>
 </div>
 
 <div id="list"></div>
 
 <script>
-    // ★ 여기에 새로 배포한 웹 앱 URL을 넣어주세요
-    const URL = 'https://script.google.com/macros/s/AKfycbzTILm2z-1m-C0YA9rkibur-6CDziuqBpHFhgb5sAw8iiToPJp4ZQdktPHHG0kaouxVGg/exec'; 
+    // ★ 새로 배포한 주소를 여기에 꼭 넣어주세요!
+    const URL = 'https://script.google.com/macros/s/AKfycbyUpfAMugTft1ph3R8_4Nd_efvQqauhO1HIz-pFOPm75XTWwIa4juK7byZ5y8qmG9k8NA/exec'; 
 
     let inventory = [];
 
@@ -71,19 +64,31 @@
         const script = document.createElement('script');
         script.src = URL + "?callback=handleData&t=" + Date.now();
         document.body.appendChild(script);
+        
+        // 5초 후에도 반응 없으면 안내 메시지
+        setTimeout(() => {
+            if(inventory.length === 0) {
+                document.getElementById('loader').children[0].innerText = "연결이 지연되고 있습니다. 잠시만 기다려주세요.";
+            }
+        }, 5000);
     }
 
-    function handleData(data) {
+    function handleData(rawRows) {
         inventory = [];
         let currentCat = "기타";
-        data.forEach(row => {
-            const val = String(row['바코드'] || row['제품명'] || '').trim();
+        const headers = rawRows[0];
+        
+        rawRows.slice(1).forEach(row => {
+            const val = String(row[0] || row[1] || '').trim();
             if (val.startsWith('[') && val.endsWith(']')) {
                 currentCat = val.replace(/[\[\]]/g, '');
-            } else if (row['제품명'] && row['바코드']) {
-                row['__cat'] = currentCat;
-                row['재고수량'] = parseInt(row['재고수량']) || 0;
-                inventory.push(row);
+            } else if (row[0] && row[1]) {
+                inventory.push({
+                    "바코드": String(row[0]),
+                    "제품명": String(row[1]),
+                    "재고수량": parseInt(row[2]) || 0,
+                    "__cat": currentCat
+                });
             }
         });
         renderTabs(); render(); updateStats();
