@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JOYFULHOUSE 재고관리</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.min.js"></script>
     <style>
         :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
         body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
@@ -18,25 +19,21 @@
         input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; outline: none; }
         .btn-group { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
         .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: 800; cursor: pointer; }
-        
-        /* 목록 아이템 (헤더 칸 제거됨) */
         .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
         .barcode-tag { font-family: monospace; font-size: 11px; color: #94a3b8; background: #f8fafc; border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; }
         .name { font-size: 14px; font-weight: 600; margin-left: 8px; }
         .stock-control { display: flex; align-items: center; gap: 10px; }
         .stock-val { font-size: 18px; font-weight: 800; min-width: 35px; text-align: center; }
         .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
-        
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; }
-        .modal-content input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        
+        .modal-content input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
         #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="loader">데이터를 불러오는 중...</div>
+<div id="loader">데이터 불러오는 중...</div>
 
 <div id="io-modal" class="modal">
     <div class="modal-content">
@@ -46,6 +43,18 @@
         <div style="display:flex; gap:10px;">
             <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취소</button>
             <button id="modal-submit" style="flex:1; padding:12px; border-radius:8px; border:none; background:var(--mint); color:white; font-weight:bold;">확인</button>
+        </div>
+    </div>
+</div>
+
+<div id="file-modal" class="modal">
+    <div class="modal-content">
+        <h3 style="text-align:center;">주문서 업로드</h3>
+        <p style="font-size:12px; color:#64748b; margin-bottom:15px; text-align:center;">엑셀의 첫 번째 열은 '바코드', 두 번째 열은 '수량'이어야 합니다.</p>
+        <input type="file" id="excel-input" accept=".xlsx, .xls">
+        <div style="display:flex; gap:10px;">
+            <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#f1f5f9;">취on소</button>
+            <button onclick="handleExcel()" style="flex:1; padding:12px; border-radius:8px; border:none; background:#6366f1; color:white; font-weight:bold;">파일 읽기</button>
         </div>
     </div>
 </div>
@@ -62,27 +71,23 @@
     <div class="btn-group">
         <button style="background:#22c55e" onclick="openIOModal('입고')">입고</button>
         <button style="background:#f97316" onclick="openIOModal('출고')">출고</button>
-        <button style="background:#6366f1" onclick="alert('엑셀 업로드 기능은 준비 중입니다.')">주문서</button>
+        <button style="background:#6366f1" onclick="openFileModal()">주문서</button>
     </div>
 </div>
 
 <div id="list"></div>
 
 <script>
-    // ★ 1. 새로 배포한 구글 웹 앱 URL을 여기에 넣어주세요
-    const URL = 'https://script.google.com/macros/s/AKfycbyTHo8hBw9-oaNC7bmftRTdn_SDGgQb0s3-om9WKcMVjJ-MgcOFc8IwdgEstS6DxXVgyQ/exec'; 
+    const URL = '사장님의_웹_앱_주소'; // 여기에 주소 꼭 다시 넣어주세요!
 
     let inventory = [];
 
-    // [핵심] fetch를 사용하여 PC 로딩 성공률을 높입니다.
     async function load() {
         try {
             const response = await fetch(URL);
             const rawData = await response.json();
             processData(rawData);
         } catch (err) {
-            console.error(err);
-            // fetch가 막힐 경우를 대비한 2차 우회 시도
             const script = document.createElement('script');
             script.src = URL + "?callback=processData&t=" + Date.now();
             document.body.appendChild(script);
@@ -93,7 +98,7 @@
         inventory = [];
         let currentCat = "기타";
         rows.forEach((row, i) => {
-            if(i === 0) return; // 첫 줄 헤더 제외
+            if(i === 0) return;
             const val = String(row[0] || '').trim();
             if (val.startsWith('[') && val.endsWith(']')) {
                 currentCat = val.replace(/[\[\]]/g, '');
@@ -124,7 +129,54 @@
                     <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
                     <button onclick="update('${i.바코드}', 1)" style="color:var(--deep-mint)">+</button>
                 </div>
-            </div>`).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
+            </div>`).join('');
+    }
+
+    /* 엑셀 파일 처리 로직 */
+    function openFileModal() { document.getElementById('file-modal').style.display = 'flex'; }
+    
+    function handleExcel() {
+        const file = document.getElementById('excel-input').files[0];
+        if (!file) return alert("파일을 선택해주세요.");
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+            let updateList = [];
+            json.forEach((row, i) => {
+                if (i === 0) return; // 제목줄 제외
+                const barcode = String(row[0]).trim();
+                const count = parseInt(row[1]) || 0;
+                if (barcode && count !== 0) {
+                    // 출고로 가정하여 수량을 마이너스로 변환 (입고라면 양수로 조정)
+                    updateList.push({ id: barcode, amount: -count });
+                }
+            });
+
+            if (updateList.length > 0) {
+                if (confirm(`${updateList.length}개의 품목 재고를 차감할까요?`)) {
+                    sendBulkUpdate(updateList);
+                }
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function sendBulkUpdate(list) {
+        // 화면 재고 먼저 반영
+        list.forEach(u => {
+            const item = inventory.find(i => String(i.바코드).trim() === String(u.id));
+            if (item) item.재고수량 += u.amount;
+        });
+        render(); updateStats(); closeModal();
+
+        // 구글 시트 전송
+        await fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(list) });
+        alert("재고 반영이 완료되었습니다.");
     }
 
     function openIOModal(type) {
@@ -137,10 +189,9 @@
             if(id && amt) { update(id, amt); closeModal(); }
         };
         document.getElementById('io-modal').style.display = 'flex';
-        document.getElementById('modal-id').focus();
     }
 
-    function closeModal() { document.getElementById('io-modal').style.display = 'none'; }
+    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
     async function update(id, amt) {
         const item = inventory.find(i => String(i.바코드).trim() === String(id).trim());
@@ -148,7 +199,7 @@
             item.재고수량 += amt;
             render(); updateStats();
             fetch(URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify([{id, amount: amt}]) });
-        } else { alert("바코드를 확인하세요."); }
+        }
     }
 
     function updateStats() {
