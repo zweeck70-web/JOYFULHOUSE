@@ -4,177 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JOYFULHOUSE 재고관리</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --bg: #f8fafc; --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; -webkit-font-smoothing: antialiased; }
+        :root { --mint: #2dd4bf; --deep-mint: #0d9488; --mustard: #eab308; --text: #1e293b; --border: #e2e8f0; }
+        body { font-family: sans-serif; background: #f8fafc; color: var(--text); margin: 0; padding-bottom: 80px; }
         .sticky-top { position: sticky; top: 0; background: #fff; z-index: 100; border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .logo-area { padding: 15px 16px 5px; }
-        .logo-text { font-size: 24px; font-weight: 900; color: var(--mint); letter-spacing: -1px; }
-        .summary-bar { display: flex; justify-content: space-around; padding: 12px; background: #fff; border-bottom: 1px solid #f1f5f9; }
-        .summary-item { text-align: center; flex: 1; }
-        .summary-item div { font-size: 11px; color: #64748b; font-weight: bold; }
-        .summary-item b { font-size: 22px; font-weight: 800; }
-        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; background: #fdfdfd; scrollbar-width: none; }
-        .nav-tabs::-webkit-scrollbar { display: none; }
-        .tab-btn { flex-shrink: 0; background: var(--mustard); border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #fff; cursor: pointer; }
-        .search-area { padding: 12px 16px 8px; background: #fff; }
-        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; font-size: 15px; background: #f1f5f9; outline: none; }
-        .action-bar { display: flex; gap: 6px; padding: 0 16px 12px; background: #fff; }
-        .action-bar button { flex: 1; padding: 12px; border-radius: 8px; border: none; color: #fff; font-weight: 800; font-size: 13px; cursor: pointer; }
-        .cat-group { background: #fff; border-bottom: 1px solid var(--border); margin-top: 10px; }
-        .cat-title { padding: 12px 16px; font-weight: 800; color: var(--deep-mint); border-bottom: 1px solid var(--border); font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        td { padding: 12px 16px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
-        .item-info { display: flex; align-items: center; gap: 6px; overflow: hidden; }
-        .barcode-label { font-family: monospace; font-size: 11px; font-weight: bold; color: #94a3b8; background: #f8fafc; border: 1px solid #e2e8f0; padding: 2px 4px; border-radius: 4px; }
-        .product-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .stock-num { font-weight: 800; font-size: 18px; text-align: center; width: 40px; }
-        .adj-btns { display: flex; gap: 4px; justify-content: flex-end; }
-        .adj-btns button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; }
-        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .btn-retry { margin-top: 20px; padding: 15px 30px; background: var(--deep-mint); color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        #toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 30px; z-index: 2000; }
-    </style>
+        .header { padding: 15px 16px; font-size: 22px; font-weight: 900; color: var(--mint); }
+        .summary { display: flex; justify-content: space-around; padding: 12px; background: #fff; text-align: center; border-bottom: 1px solid #f1f5f9; }
+        .summary b { font-size: 20px; display: block; }
+        .summary span { font-size: 11px; color: #64748b; }
+        .search-area { padding: 12px; background: #fff; }
+        input#search { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; background: #f1f5f9; }
+        .btn-group { display: flex; gap: 8px; padding: 0 12px 12px; background: #fff; }
+        .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: bold; font-size: 15px; }
+        .item-row { background: #fff; padding: 15px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+        .item-info { display: flex; flex-direction: column; gap: 4px; }
+        .barcode { font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; width: fit-content; }
+        .name { font-size: 15px; font-weight: 600; }
+        .stock-control { display: flex; align-items: center; gap: 10px; }
+        .stock-val { font-size: 18px; font-weight: 800; width: 40px; text-align: center; }
+        .stock-control button { width: 35px; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: #fff; font-weight: bold; font-size: 18px; }
+        #loader { position: fixed; inset: 0; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    </small></style>
 </head>
 <body>
 
-<div id="loader">
-    <div id="loader-msg" style="font-size: 18px; font-weight: bold; color: #64748b;">🔄 강력 재연결 중...</div>
-    <div style="font-size: 13px; color: #94a3b8; margin-top: 10px;">첫 로딩 시 5~10초 정도 소요될 수 있습니다.</div>
-    <button class="btn-retry" onclick="location.reload()">새로고침</button>
-</div>
+<div id="loader">데이터 연결 중...</div>
 
 <div class="sticky-top">
-    <div class="logo-area"><div class="logo-text">🏠 JOYFULHOUSE</div></div>
-    <div class="summary-bar">
-        <div class="summary-item"><div>품목</div><b id="st-k">0</b></div>
-        <div class="summary-item"><div>총재고</div><b id="st-q">0</b></div>
-        <div class="summary-item"><div>위험</div><b id="st-d" style="color:#ef4444">0</b></div>
+    <div class="header">🏠 JOYFULHOUSE</div>
+    <div class="summary">
+        <div><span>품목</span><b id="st-k">0</b></div>
+        <div><span>총재고</span><b id="st-q">0</b></div>
+        <div><span>위험</span><b id="st-d" style="color:red">0</b></div>
     </div>
-    <div id="nav-tabs" class="nav-tabs"></div>
+    <div class="search-area"><input type="text" id="search" placeholder="상품명 또는 바코드 검색" onkeyup="render()"></div>
+    <div class="btn-group">
+        <button style="background:#22c55e" onclick="alert('목록의 + 버튼을 이용해 입고하세요')">입고</button>
+        <button style="background:#f97316" onclick="alert('목록의 - 버튼을 이용해 출고하세요')">출고</button>
+    </div>
 </div>
 
-<div class="search-area"><input type="text" id="search" placeholder="🔍 상품명 또는 바코드 검색" onkeyup="render()"></div>
-
-<div class="action-bar">
-    <button style="background:#22c55e" onclick="alert('목록에서 +,-를 이용해주세요')">재고조정</button>
-    <button style="background:#6366f1" onclick="document.getElementById('xl').click()">주문서</button>
-    <input type="file" id="xl" style="display:none" accept=".xlsx, .xls, .csv" onchange="handleXL(event)">
-</div>
-
-<div id="main-list"></div>
-<div id="toast"></div>
+<div id="list"></div>
 
 <script>
-    // ★★★ 사장님의 앱스 스크립트 주소를 아래에 꼭 넣어주세요 ★★★
-    const URL = 'https://script.google.com/macros/s/AKfycbwLLIK_UAbJpUBvMQJUSN3qRDHP1H4HDGdwW58HpUixdL-yTFzDgzG5SwPafJNungf_OQ/exec'; 
-    
+    const URL = 'https://script.google.com/macros/s/AKfycbyDhHZplwOgL_jtHgPt3-aPcxLtdbWS_fqnxkFR_9YWbcMS87oxBC3EdtuBxwQE5vqkpg/exec'; 
     let inventory = [];
 
-    // [JSONP 우회 방식 함수]
-    function load() {
-        const script = document.createElement('script');
-        // 주소 뒤에 callback 파라미터를 붙여 구글 서버의 보안 검사를 우회합니다.
-        script.src = `${URL}?callback=callbackFunc&t=${Date.now()}`;
-        document.body.appendChild(script);
-        
-        // 10초 동안 응답 없으면 에러 메시지
-        setTimeout(() => {
-            if(inventory.length === 0) {
-                document.getElementById('loader-msg').innerHTML = "<b style='color:#ef4444'>연결 지연</b><br><small>잠시 후 새로고침 해주세요.</small>";
-            }
-        }, 10000);
-    }
-
-    // 구글 서버에서 데이터를 받아 처리하는 함수
-    function callbackFunc(data) {
-        inventory = [];
-        let cat = "기타";
-        data.forEach(row => {
-            const val = String(row['바코드'] || row['제품명'] || '').trim();
-            if (val.startsWith('[') && val.endsWith(']')) {
-                cat = val.replace(/[\[\]]/g, '');
-            } else if (row['제품명'] && row['바코드']) {
-                row['__cat'] = cat;
-                row['재고수량'] = parseInt(String(row['재고수량'] || 0).replace(/[^0-9-]/g, '')) || 0;
-                inventory.push(row);
-            }
-        });
-
-        renderTabs();
-        render();
-        updateStats();
-        document.getElementById('loader').style.display = 'none';
-    }
-
-    function renderTabs() {
-        const cats = [...new Set(inventory.map(i => i['__cat']))];
-        document.getElementById('nav-tabs').innerHTML = cats.map(c => 
-            `<button class="tab-btn" onclick="goCat('${c}')">${c}</button>`
-        ).join('');
+    async function load() {
+        try {
+            const res = await fetch(URL + "?t=" + Date.now());
+            inventory = await res.json();
+            render(); updateStats();
+            document.getElementById('loader').style.display = 'none';
+        } catch (e) {
+            document.getElementById('loader').innerText = "연결 실패. 주소를 확인하세요.";
+        }
     }
 
     function render() {
         const q = document.getElementById('search').value.toLowerCase();
-        const filtered = inventory.filter(i => 
-            String(i['제품명']).toLowerCase().includes(q) || String(i['바코드']).toLowerCase().includes(q)
-        );
-        const groups = filtered.reduce((acc, i) => {
-            if(!acc[i['__cat']]) acc[i['__cat']] = [];
-            acc[i['__cat']].push(i);
-            return acc;
-        }, {});
-
-        let html = '';
-        for(let cat in groups) {
-            html += `<div class="cat-group" id="tag-${cat}"><div class="cat-title">🏷️ ${cat}</div><table>`;
-            html += groups[cat].map(i => {
-                let dot = i['재고수량'] < 5 ? '#ef4444' : '#22c55e';
-                return `<tr>
-                    <td style="width:10px;"><span style="width:8px; height:8px; border-radius:50%; display:inline-block; background:${dot}"></span></td>
-                    <td style="width: 70%;">
-                        <div class="item-info">
-                            <span class="barcode-label">${i['바코드']}</span>
-                            <span class="product-name">${i['제품명']}</span>
-                        </div>
-                    </td>
-                    <td class="stock-num">${i['재고수량']}</td>
-                    <td>
-                        <div class="adj-btns">
-                            <button onclick="update('${i['바코드']}', -1)">-</button>
-                            <button onclick="update('${i['바코드']}', 1)" style="color:var(--deep-mint)">+</button>
-                        </div>
-                    </td>
-                </tr>`;
-            }).join('');
-            html += `</table></div>`;
-        }
-        document.getElementById('main-list').innerHTML = html || '<div style="padding:80px 0; text-align:center;">내역 없음</div>';
+        const filtered = inventory.filter(i => i.제품명.toLowerCase().includes(q) || i.바코드.includes(q));
+        
+        document.getElementById('list').innerHTML = filtered.map(i => `
+            <div class="item-row">
+                <div class="item-info">
+                    <span class="barcode">${i.바코드}</span>
+                    <span class="name">${i.제품명}</span>
+                </div>
+                <div class="stock-control">
+                    <button onclick="update('${i.바코드}', -1)">-</button>
+                    <span class="stock-val" style="color:${i.재고수량 < 5 ? 'red' : 'inherit'}">${i.재고수량}</span>
+                    <button onclick="update('${i.바코드}', 1)" style="color:var(--deep-mint)">+</button>
+                </div>
+            </div>
+        `).join('') || '<div style="padding:50px; text-align:center;">내역 없음</div>';
     }
 
     async function update(id, amt) {
-        // 업데이트는 기존 방식대로 (POST 대신 GET 우회 활용 가능성 대비)
-        fetch(`${URL}?id=${id}&amount=${amt}`, { mode: 'no-cors' });
-        const item = inventory.find(i => String(i['바코드']) === String(id));
+        const item = inventory.find(i => i.바코드 === id);
         if(item) {
-            item['재고수량'] += amt;
+            item.재고수량 += amt;
             render(); updateStats();
-            const t = document.getElementById('toast');
-            t.innerText = `변경 완료`; t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 1500);
+            fetch(URL, { method: 'POST', body: JSON.stringify([{id, amount: amt}]) });
         }
     }
 
     function updateStats() {
-        document.getElementById('st-q').innerText = inventory.reduce((s, i) => s + i['재고수량'], 0).toLocaleString();
+        document.getElementById('st-q').innerText = inventory.reduce((s, i) => s + i.재고수량, 0).toLocaleString();
         document.getElementById('st-k').innerText = inventory.length;
-        document.getElementById('st-d').innerText = inventory.filter(i => i['재고수량'] < 5).length;
-    }
-
-    function goCat(cat) {
-        const el = document.getElementById('tag-' + cat);
-        if(el) window.scrollTo({ top: el.offsetTop - 190, behavior: 'smooth' });
+        document.getElementById('st-d').innerText = inventory.filter(i => i.재고수량 < 5).length;
     }
 
     window.onload = load;
