@@ -21,6 +21,7 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; min-height:100vh; }
 
+  /* HEADER */
   .header {
     background: linear-gradient(135deg, #1a1d27 0%, #20243a 100%);
     padding: 16px 20px;
@@ -38,6 +39,7 @@
   .date-badge .date { font-size:13px; font-weight:700; color:var(--text); }
   .date-badge .time { font-size:11px; color:var(--muted); }
 
+  /* SUMMARY */
   .summary { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; padding:16px 16px 0; }
   .sum-card { background:var(--card); border-radius:14px; padding:16px; border:1px solid var(--border); }
   .sum-card .icon { font-size:24px; margin-bottom:8px; }
@@ -47,6 +49,7 @@
   .sum-card .num.red { color:var(--red); }
   .sum-card .label { font-size:11px; color:var(--muted); margin-top:4px; }
 
+  /* BUTTONS */
   .btn-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:14px 16px; }
   .btn { border:none; border-radius:12px; padding:14px 8px; font-size:14px; font-weight:700; font-family:'Noto Sans KR',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; }
   .btn:active { transform:scale(.95); }
@@ -54,16 +57,19 @@
   .btn-out { background:var(--orange); color:#fff; }
   .btn-order { background:var(--accent); color:#fff; }
 
+  /* SEARCH */
   .search-wrap { padding:0 16px 12px; }
   .search-box { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:10px; }
   .search-box input { background:none; border:none; outline:none; color:var(--text); font-size:14px; font-family:'Noto Sans KR',sans-serif; width:100%; }
   .search-box input::placeholder { color:var(--muted); }
 
+  /* CATEGORY TABS */
   .tabs { display:flex; gap:8px; padding:0 16px 14px; overflow-x:auto; scrollbar-width:none; }
   .tabs::-webkit-scrollbar { display:none; }
   .tab { border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:20px; padding:7px 14px; font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; transition:all .2s; }
   .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
 
+  /* TABLE */
   .table-wrap { padding:0 16px 100px; }
   .category-block { margin-bottom:16px; }
   .cat-header { background:var(--card2); border-radius:12px 12px 0 0; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border:1px solid var(--border); border-bottom:none; cursor:pointer; }
@@ -91,12 +97,14 @@
   .status-dot.ok { background:var(--green); }
   .status-dot.low { background:var(--red); }
 
+  /* +/- BUTTONS */
   .ctrl { display:flex; align-items:center; gap:4px; justify-content:center; }
   .ctrl-btn { width:26px; height:26px; border:none; border-radius:6px; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
   .ctrl-btn:active { transform:scale(.9); }
   .ctrl-btn.plus { background:var(--green); color:#fff; }
   .ctrl-btn.minus { background:var(--red); color:#fff; }
 
+  /* MODAL */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:none; align-items:flex-end; justify-content:center; }
   .modal-overlay.show { display:flex; }
   .modal { background:var(--card); border-radius:20px 20px 0 0; padding:24px 20px 40px; width:100%; max-width:480px; border-top:1px solid var(--border); }
@@ -117,17 +125,21 @@
   .modal-confirm.in { background:var(--green); }
   .modal-confirm.out { background:var(--orange); }
 
+  /* TOAST */
   .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 24px; font-size:13px; font-weight:700; opacity:0; transition:all .3s; z-index:300; white-space:nowrap; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
+  /* LOADING */
   .loading { text-align:center; padding:60px 20px; color:var(--muted); font-size:14px; }
   .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
   @keyframes spin { to { transform:rotate(360deg); } }
+
   .empty { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <div class="header">
   <div class="header-left">
     <div class="logo-icon">🏠</div>
@@ -142,6 +154,7 @@
   </div>
 </div>
 
+<!-- SUMMARY -->
 <div class="summary">
   <div class="sum-card">
     <div class="icon">📦</div>
@@ -160,12 +173,14 @@
   </div>
 </div>
 
+<!-- BUTTONS -->
 <div class="btn-row">
   <button class="btn btn-in" onclick="openModal('in')">⬇️ 입고</button>
   <button class="btn btn-out" onclick="openModal('out')">⬆️ 출고</button>
   <button class="btn btn-order" onclick="alert('주문서 기능 준비중입니다.')">📋 주문서</button>
 </div>
 
+<!-- SEARCH -->
 <div class="search-wrap">
   <div class="search-box">
     <span>🔍</span>
@@ -173,12 +188,15 @@
   </div>
 </div>
 
+<!-- TABS -->
 <div class="tabs" id="tabsContainer"></div>
 
+<!-- TABLE -->
 <div class="table-wrap" id="tableWrap">
   <div class="loading"><div class="spinner"></div>데이터 불러오는 중...</div>
 </div>
 
+<!-- 입고/출고 MODAL -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <h2 id="modalTitle">입고 처리</h2>
@@ -195,10 +213,11 @@
   </div>
 </div>
 
+<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbybc_iedipg7Xc3hNjkifLGK8Br2ysssxForT1PeXTP7tW8wA3_z7pJhDPpqJkpYh2BIQ/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwkynh7j6ORZh4RxrKYtv6IFPatpsvtA5afbyGLNSY75naWNowA8uUyB-2kQiKzO_sl/exec';
 const LOW_STOCK = 5;
 
 let allData = [];
@@ -206,17 +225,25 @@ let currentCategory = '전체';
 let currentMode = 'in';
 let selectedBarcode = null;
 
+// 날짜/시간
 function updateClock() {
   const now = new Date();
-  document.getElementById('dateText').textContent = now.toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'});
-  document.getElementById('timeText').textContent = now.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'});
+  const d = now.toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'});
+  const t = now.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('dateText').textContent = d;
+  document.getElementById('timeText').textContent = t;
 }
 updateClock();
 setInterval(updateClock, 1000);
 
+// 데이터 로드
 async function loadData() {
   try {
-    const res = await fetch(`${API}?action=getAll`);
+    const res = await fetch(`${API}?action=getAll`, {
+      method: 'GET',
+      mode: 'cors',
+      redirect: 'follow'
+    });
     const json = await res.json();
     if (json.status === 'ok') {
       allData = json.data.map(r => ({
@@ -232,13 +259,17 @@ async function loadData() {
   }
 }
 
+// 카테고리 추출
 function getCategories() {
   const cats = ['전체'];
   const seen = new Set();
-  allData.forEach(d => { if (!seen.has(d.category)) { seen.add(d.category); cats.push(d.category); } });
+  allData.forEach(d => {
+    if (!seen.has(d.category)) { seen.add(d.category); cats.push(d.category); }
+  });
   return cats;
 }
 
+// 렌더링
 function render() {
   updateSummary();
   renderTabs();
@@ -254,8 +285,9 @@ function updateSummary() {
 
 function renderTabs() {
   const cats = getCategories();
-  document.getElementById('tabsContainer').innerHTML = cats.map(c =>
-    `<button class="tab ${c===currentCategory?'active':''}" onclick="setCategory('${c}')">${c}</button>`
+  const container = document.getElementById('tabsContainer');
+  container.innerHTML = cats.map(c =>
+    `<button class="tab ${c===currentCategory?'active':''}" onclick="setCategory('${c}')">${c==='전체'?'전체':c}</button>`
   ).join('');
 }
 
@@ -264,13 +296,16 @@ function setCategory(cat) {
   render();
 }
 
-function filterProducts() { renderTable(); }
+function filterProducts() {
+  renderTable();
+}
 
 function renderTable() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   let data = currentCategory === '전체' ? allData : allData.filter(d => d.category === currentCategory);
   if (q) data = data.filter(d => d.barcode.toLowerCase().includes(q) || d.name.toLowerCase().includes(q));
 
+  // 카테고리별 그룹
   const groups = {};
   data.forEach(d => {
     if (!groups[d.category]) groups[d.category] = [];
@@ -297,7 +332,9 @@ function renderTable() {
       </div>
       <div class="table-container" id="cat_${cat}">
         <table>
-          <thead><tr><th>상태</th><th>바코드</th><th>제품명</th><th>재고</th><th>조작</th></tr></thead>
+          <thead><tr>
+            <th>상태</th><th>바코드</th><th>제품명</th><th>재고</th><th>조작</th>
+          </tr></thead>
           <tbody>
             ${items.map(item => `
             <tr>
@@ -323,10 +360,16 @@ function renderTable() {
 function toggleCat(id, header) {
   const el = document.getElementById(id);
   const arrow = header.querySelector('.cat-arrow');
-  if (el.style.display === 'none') { el.style.display = ''; arrow.classList.add('open'); }
-  else { el.style.display = 'none'; arrow.classList.remove('open'); }
+  if (el.style.display === 'none') {
+    el.style.display = '';
+    arrow.classList.add('open');
+  } else {
+    el.style.display = 'none';
+    arrow.classList.remove('open');
+  }
 }
 
+// 빠른 +/- 버튼
 async function quickUpdate(barcode, change) {
   const item = allData.find(d => d.barcode === barcode);
   if (!item) return;
@@ -337,12 +380,14 @@ async function quickUpdate(barcode, change) {
   showToast(`${item.name.substring(0,10)}... ${change > 0 ? '+' : ''}${change} 처리완료`);
 }
 
+// 서버 업데이트
 async function updateServer(barcode, qty) {
   try {
     await fetch(`${API}?action=update&barcode=${encodeURIComponent(barcode)}&qty=${qty}`);
   } catch(e) { showToast('⚠️ 서버 연결 오류'); }
 }
 
+// 모달
 function openModal(mode) {
   currentMode = mode;
   selectedBarcode = null;
@@ -351,11 +396,14 @@ function openModal(mode) {
   document.getElementById('modalConfirm').textContent = mode === 'in' ? '입고 확인' : '출고 확인';
   document.getElementById('modalSearch').value = '';
   document.getElementById('qtyInput').value = 1;
+  document.getElementById('modalResult').innerHTML = '';
   document.getElementById('modalOverlay').classList.add('show');
   filterModalItems();
 }
 
-function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
 
 function filterModalItems() {
   const q = document.getElementById('modalSearch').value.toLowerCase();
@@ -391,6 +439,7 @@ async function confirmInOut() {
   showToast(`${currentMode === 'in' ? '입고' : '출고'} ${qty}개 처리완료 ✅`);
 }
 
+// 토스트
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -398,8 +447,11 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+// 초기 로드
 loadData();
+// 30초마다 자동 갱신
 setInterval(loadData, 30000);
 </script>
 </body>
 </html>
+
