@@ -1,667 +1,405 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JOYFULHOUSE 재고관리</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .cat-btn { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 8px 18px; font-weight: bold; font-size: 13px; color: #64748b; white-space: nowrap; transition: 0.2s; }
-        .cat-btn.active { background: #eab308; color: white; border-color: #eab308; }
-        #loading { display:none; position: fixed; inset:0; background:rgba(0,0,0,0.3); z-index:100; align-items:center; justify-content:center; flex-direction: column; color: white; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOYFULHOUSE 재고관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card2: #20243a;
+    --accent: #6c63ff;
+    --green: #00c896;
+    --orange: #ff6b35;
+    --red: #ff4757;
+    --text: #e8eaf0;
+    --muted: #7b7f99;
+    --border: #2a2d3e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; min-height:100vh; }
+
+  .header {
+    background: linear-gradient(135deg, #1a1d27 0%, #20243a 100%);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top:0; z-index:100;
+  }
+  .header-left { display:flex; align-items:center; gap:12px; }
+  .logo-icon { width:44px; height:44px; background:linear-gradient(135deg,var(--accent),#ff6b9d); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .logo-text h1 { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:#fff; }
+  .logo-text p { font-size:11px; color:var(--muted); }
+  .date-badge { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:8px 14px; text-align:center; }
+  .date-badge .date { font-size:13px; font-weight:700; color:var(--text); }
+  .date-badge .time { font-size:11px; color:var(--muted); }
+
+  .summary { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; padding:16px 16px 0; }
+  .sum-card { background:var(--card); border-radius:14px; padding:16px; border:1px solid var(--border); }
+  .sum-card .icon { font-size:24px; margin-bottom:8px; }
+  .sum-card .num { font-size:28px; font-weight:900; line-height:1; }
+  .sum-card .num.blue { color:var(--accent); }
+  .sum-card .num.green { color:var(--green); }
+  .sum-card .num.red { color:var(--red); }
+  .sum-card .label { font-size:11px; color:var(--muted); margin-top:4px; }
+
+  .btn-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:14px 16px; }
+  .btn { border:none; border-radius:12px; padding:14px 8px; font-size:14px; font-weight:700; font-family:'Noto Sans KR',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all .2s; }
+  .btn:active { transform:scale(.95); }
+  .btn-in { background:var(--green); color:#fff; }
+  .btn-out { background:var(--orange); color:#fff; }
+  .btn-order { background:var(--accent); color:#fff; }
+
+  .search-wrap { padding:0 16px 12px; }
+  .search-box { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:10px; }
+  .search-box input { background:none; border:none; outline:none; color:var(--text); font-size:14px; font-family:'Noto Sans KR',sans-serif; width:100%; }
+  .search-box input::placeholder { color:var(--muted); }
+
+  .tabs { display:flex; gap:8px; padding:0 16px 14px; overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:20px; padding:7px 14px; font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; white-space:nowrap; transition:all .2s; }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+
+  .table-wrap { padding:0 16px 100px; }
+  .category-block { margin-bottom:16px; }
+  .cat-header { background:var(--card2); border-radius:12px 12px 0 0; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border:1px solid var(--border); border-bottom:none; cursor:pointer; }
+  .cat-header-left { display:flex; align-items:center; gap:10px; }
+  .cat-name { font-weight:700; font-size:15px; }
+  .cat-count { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:2px 10px; font-size:12px; color:var(--muted); }
+  .cat-danger { background:var(--red); color:#fff; border-radius:20px; padding:2px 10px; font-size:12px; font-weight:700; }
+  .cat-arrow { color:var(--muted); font-size:12px; transition:transform .3s; }
+  .cat-arrow.open { transform:rotate(180deg); }
+
+  .table-container { border:1px solid var(--border); border-top:none; border-radius:0 0 12px 12px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead tr { background:var(--card2); }
+  thead th { padding:10px 8px; font-size:11px; color:var(--muted); font-weight:500; text-align:center; border-bottom:1px solid var(--border); }
+  tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:rgba(108,99,255,.05); }
+  tbody td { padding:10px 8px; font-size:12px; text-align:center; }
+  .td-barcode { color:var(--accent); font-weight:700; font-size:11px; }
+  .td-name { text-align:left; color:var(--text); font-size:12px; line-height:1.4; }
+  .td-qty { font-weight:900; font-size:15px; }
+  .td-qty.ok { color:var(--green); }
+  .td-qty.low { color:var(--red); }
+  .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .status-dot.ok { background:var(--green); }
+  .status-dot.low { background:var(--red); }
+
+  .ctrl { display:flex; align-items:center; gap:4px; justify-content:center; }
+  .ctrl-btn { width:26px; height:26px; border:none; border-radius:6px; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+  .ctrl-btn:active { transform:scale(.9); }
+  .ctrl-btn.plus { background:var(--green); color:#fff; }
+  .ctrl-btn.minus { background:var(--red); color:#fff; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:none; align-items:flex-end; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--card); border-radius:20px 20px 0 0; padding:24px 20px 40px; width:100%; max-width:480px; border-top:1px solid var(--border); }
+  .modal h2 { font-size:18px; font-weight:700; margin-bottom:20px; }
+  .modal-search { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 14px; width:100%; color:var(--text); font-size:14px; font-family:'Noto Sans KR',sans-serif; outline:none; margin-bottom:12px; }
+  .modal-result { max-height:200px; overflow-y:auto; margin-bottom:16px; }
+  .modal-item { padding:10px 12px; border-radius:8px; cursor:pointer; border:1px solid transparent; transition:all .15s; }
+  .modal-item:hover, .modal-item.selected { background:var(--card2); border-color:var(--accent); }
+  .modal-item .mi-name { font-size:13px; font-weight:700; }
+  .modal-item .mi-bar { font-size:11px; color:var(--muted); }
+  .modal-item .mi-qty { font-size:12px; color:var(--green); font-weight:700; }
+  .qty-row { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .qty-row label { font-size:13px; color:var(--muted); white-space:nowrap; }
+  .qty-input { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 14px; color:var(--text); font-size:16px; font-family:'Noto Sans KR',sans-serif; outline:none; flex:1; text-align:center; }
+  .modal-btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .modal-cancel { background:var(--card2); color:var(--muted); border:1px solid var(--border); border-radius:12px; padding:14px; font-size:15px; font-weight:700; font-family:'Noto Sans KR',sans-serif; cursor:pointer; }
+  .modal-confirm { border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; font-family:'Noto Sans KR',sans-serif; cursor:pointer; color:#fff; }
+  .modal-confirm.in { background:var(--green); }
+  .modal-confirm.out { background:var(--orange); }
+
+  .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 24px; font-size:13px; font-weight:700; opacity:0; transition:all .3s; z-index:300; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .loading { text-align:center; padding:60px 20px; color:var(--muted); font-size:14px; }
+  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .empty { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
+</style>
 </head>
 <body>
 
-<div id="loading">
-    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-2"></div>
-    <p class="font-bold">시트 연결 중...</p>
+<div class="header">
+  <div class="header-left">
+    <div class="logo-icon">🏠</div>
+    <div class="logo-text">
+      <h1>JOYFULHOUSE</h1>
+      <p>재고 관리 시스템</p>
+    </div>
+  </div>
+  <div class="date-badge">
+    <div class="date" id="dateText"></div>
+    <div class="time" id="timeText"></div>
+  </div>
 </div>
 
-<div class="sticky top-0 z-50 bg-white shadow-sm">
-    <div class="p-4 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <span class="text-2xl">🏠</span>
-            <h1 class="text-xl font-black text-teal-400 italic">JOYFULHOUSE</h1>
-        </div>
-        <button onclick="fetchLiveStock()" class="text-xs font-bold bg-teal-500 px-4 py-2 rounded-full text-white active:bg-teal-600 shadow-md">🔄 시트 동기화</button>
-    </div>
-
-    <div class="grid grid-cols-3 gap-2 px-4 pb-4 text-center border-b text-slate-700">
-        <div><p class="text-[10px] text-gray-400 uppercase">전체 품목</p><p id="count-ui" class="font-bold text-lg">455</p></div>
-        <div><p class="text-[10px] text-gray-400 uppercase">현재 총재고</p><p id="total-ui" class="font-bold text-lg text-teal-600">0</p></div>
-        <div><p class="text-[10px] text-gray-400 uppercase text-red-400">보충 필요</p><p id="risk-ui" class="font-bold text-lg text-red-500">0</p></div>
-    </div>
-
-    <div class="flex gap-2 overflow-x-auto p-4 no-scrollbar">
-        <button onclick="filterCat('전체')" class="cat-btn active">전체</button>
-        <button onclick="filterCat('액자')" class="cat-btn">액자류</button>
-        <button onclick="filterCat('시계')" class="cat-btn">시계류</button>
-        <button onclick="filterCat('주보')" class="cat-btn">주보류</button>
-        <button onclick="filterCat('카드')" class="cat-btn">카드류</button>
-        <button onclick="filterCat('엽서')" class="cat-btn">엽서류</button>
-        <button onclick="filterCat('봉투')" class="cat-btn">봉투류</button>
-    </div>
-
-    <div class="px-4 pb-4">
-        <input type="text" id="search" oninput="handleSearch()" placeholder="상품명 또는 바코드 검색" 
-               class="w-full bg-[#f1f5f9] border-none rounded-xl py-3 px-4 text-sm outline-none focus:ring-2 ring-teal-400/50">
-    </div>
+<div class="summary">
+  <div class="sum-card">
+    <div class="icon">📦</div>
+    <div class="num blue" id="totalItems">-</div>
+    <div class="label">전체 품목</div>
+  </div>
+  <div class="sum-card">
+    <div class="icon">📊</div>
+    <div class="num green" id="totalQty">-</div>
+    <div class="label">총 재고 수량</div>
+  </div>
+  <div class="sum-card">
+    <div class="icon">🔴</div>
+    <div class="num red" id="dangerItems">-</div>
+    <div class="label">위험 품목</div>
+  </div>
 </div>
 
-<div id="list" class="divide-y divide-slate-50 pb-32"></div>
-
-<div class="fixed bottom-6 left-4 right-4 grid grid-cols-3 gap-3">
-    <button class="bg-green-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95">입고</button>
-    <button class="bg-orange-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95">출고</button>
-    <button class="bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95">주문</button>
+<div class="btn-row">
+  <button class="btn btn-in" onclick="openModal('in')">⬇️ 입고</button>
+  <button class="btn btn-out" onclick="openModal('out')">⬆️ 출고</button>
+  <button class="btn btn-order" onclick="alert('주문서 기능 준비중입니다.')">📋 주문서</button>
 </div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span>🔍</span>
+    <input type="text" id="searchInput" placeholder="바코드 또는 제품명 검색..." oninput="filterProducts()">
+  </div>
+</div>
+
+<div class="tabs" id="tabsContainer"></div>
+
+<div class="table-wrap" id="tableWrap">
+  <div class="loading"><div class="spinner"></div>데이터 불러오는 중...</div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">입고 처리</h2>
+    <input class="modal-search" type="text" id="modalSearch" placeholder="바코드 또는 제품명 검색..." oninput="filterModalItems()">
+    <div class="modal-result" id="modalResult"></div>
+    <div class="qty-row">
+      <label>수량</label>
+      <input class="qty-input" type="number" id="qtyInput" value="1" min="1">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">취소</button>
+      <button class="modal-confirm in" id="modalConfirm" onclick="confirmInOut()">확인</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-    // 🔗 [필수 수정] 구글 앱스 스크립트 '배포 URL'을 여기에 넣으세요!
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEYXkOAaoTZmWi9H2Cgeh15-X0WSOo02VrRP-MWjYkRH_k3CDidstO1mLI_vU9AQrp/exec";
+const API = 'https://script.google.com/macros/s/AKfycbybc_iedipg7Xc3hNjkifLGK8Br2ysssxForT1PeXTP7tW8wA3_z7pJhDPpqJkpYh2BIQ/exec';
+const LOW_STOCK = 5;
 
-    // 📦 데이터베이스 (사장님의 455개 품목)
-    const rawData = `[꽃액자]
-DF55001,55000꽃액자_여호와는네게,0
-DF55002,55000꽃액자_하늘의보고를,0
-DF50001,50000꽃액자_여호와는네게,0
-DF50002,50000꽃액자_하늘의보고를,0
-DF48001,48000꽃액자_사랑하는자여,0
-DF48002,48000꽃액자_물댄동산,0
-DF45001,45000꽃액자_사랑깊은약속,0
-DF39001,39000꽃액자_행복이가득한우리집,0
-DF39002,39000꽃액자_믿음의가정,0
-DF39003,39000꽃액자_복있는사람,0
-DF39004,39000꽃액자_주를기뻐하라,0
-DF29001,29000꽃액자_예수만섬기는,0
-DF29002,29000꽃액자_복주고복주며,0
-DF29003,29000꽃액자_평강의주께서,0
-DF29004,29000꽃액자_사랑하는자여,0
-DF15001,15000꽃액자_축복,0
-DF15002,15000꽃액자_사랑,0
-DF15003,15000꽃액자_은혜,0
-DF15004,15000꽃액자_기쁨,0
-[말씀수지액자]
-SF3009,34000수채화캘리액자_여호와는,0
-SF27001,27000말씀액자_야베스의기도,0
-SF27002,27000말씀액자_물댄동산,0
-SF27003,27000말씀액자_여호와는나의목자,0
-SF27004,27000말씀액자_하나님은사랑이시라,0
-SF27005,27000말씀액자_예수만섬기는우리집,0
-SF1901,19000말씀액자_기쁨,0
-SF1902,19000말씀액자_사랑,0
-SF1903,19000말씀액자_축복,0
-SF1904,19000말씀액자_행복,0
-SF17010,17000말씀액자_사랑하는자여,0
-SF17011,17000말씀액자_예수만섬기는,0
-SF17012,17000말씀액자_하나님은사랑이시라,0
-SF17013,17000말씀액자_하늘의아름다운,0
-SF1510,15000수채화캘리_내가반드시,0
-SF1511,15000수채화캘리_너는물댄동산,0
-SF1512,15000수채화캘리_네이름을창대하게,0
-SF1513,15000수채화캘리_사랑하는자여,0
-SF14001,14000말씀액자_예수사랑,0
-SF1301,13000말씀액자_기쁨이샘솟는우리집,0
-SF1302,13000말씀액자_사랑이넘치는우리집,0
-SF1303,13000말씀액자_축복이넘치는우리집,0
-SF1304,13000말씀액자_행복이가득한우리집,0
-SF1310,13000수채화캘리_내가반드시,0
-SF1311,13000수채화캘리_너는물댄동산,0
-SF1312,13000수채화캘리_네이름을창대,0
-SF1313,13000수채화캘리_사랑하는자여,0
-SF01001,10000우리집_기쁨이샘솟는우리집,0
-SF01002,10000우리집_사랑이풍성한우리집,0
-SF01003,10000우리집_축복이넘치는우리집,0
-SF01004,10000우리집_예수만섬기는우리집,0
-SF01005,10000우리집_행복이가득한우리집,0
-SF01006,10000우리집_은혜가풍성한우리집,0
-SF9001,9000수채화캘리액자_기도,0
-SF09001,9000우리집_기쁨이샘솟는우리집,0
-SF9002,9000수채화캘리액자_기쁨,0
-SF09002,9000우리집_사랑이풍성한우리집,0
-SF9003,9000수채화캘리액자_사랑,0
-SF09003,9000우리집_축복이넘치는우리집,0
-SF9004,9000수채화캘리액자_은혜,0
-SF09004,9000우리집_예수만섬기는우리집,0
-SF9005,9000수채화캘리액자_축복,0
-SF09005,9000우리집_행복이가득한우리집,0
-SF9006,9000수채화캘리액자_행복,0
-SF09006,9000우리집_은혜가풍성한우리집,0
-SF8001,8000말씀액자_내가반드시,0
-SF8002,8000말씀액자_하늘의아름다운보고를,0
-SF8003,8000말씀액자_하나님은사랑,0
-SF8004,8000말씀액자_사랑하는자여,0
-SF8005,8000말씀액자_너는사랑받기위해,0
-SF8006,8000말씀액자_너는시냇가에심은,0
-SF8007,8000말씀액자_네이름을창대하게,0
-[말씀부조액자]
-SF20001,20000말씀입체액자_나의힘이되신,0
-SF20002,20000말씀입체액자_주께서내게,0
-SF20003,20000말씀입체액자_아무것도,0
-SF20004,20000말씀입체액자_여호와는네게,0
-[기타&독판액자]
-AL30001,30000알루미늄액자_동행,0
-AL30002,30000알루미늄액자_Always,0
-AL30003,30000알루미늄액자_소망,0
-JJ2301,23000독판제작,0
-JJ2001,20000독판액자,0
-WA18001,18000우드아크릴액자_동행,0
-WA18002,18000우드아크릴액자_기쁨,0
-WA18003,18000우드아크릴액자_사랑,0
-WA18004,18000우드아크릴액자_평안,0
-JJ1301,13000독판액자,0
-JJ6001,60000독판제작,0
-JJ2801,28000독판제작,0
-JJ2501,25000독판제작,0
-CR001,다릅나무 십자가,0
-[캔버스액자]
-KCP2501,캔버스아트말씀액자(小)_피아노/오렌지,0
-KCP2502,캔버스아트말씀액자(小)_사랑이풍성/그린,0
-KCP2503,캔버스아트말씀액자(小)_집/핑크,0
-KCP2504,캔버스캘리말씀액자(小)_여호와는,0
-KCP2505,캔버스캘리말씀액자(小)_사랑/수채화꽃,0
-KCP2506,캔버스캘리말씀액자(小)_예수동행,0
-KCP2507,캔버스캘리말씀액자(小)_옥합을깨뜨려,0
-KCP2508,캔버스캘리말씀액자(小)_예수사랑,0
-KCP2509,캔버스캘리말씀액자(小)_나의힘이,0
-KCP3501,캔버스아트말씀액자(中)_피아노/오렌지,0
-KCP3502,캔버스아트말씀액자(中)_사랑이풍성/그린,0
-KCP3503,캔버스아트말씀액자(中)_집/핑크,0
-KCP3504,캔버스캘리말씀액자(中)_여호와는,0
-KCP3505,캔버스캘리말씀액자(中)_사랑/수채화꽃,0
-KCP3506,캔버스캘리말씀액자(中)_예수동행,0
-KCP3507,캔버스캘리말씀액자(中)_옥합을깨뜨려,0
-KCP3508,캔버스캘리말씀액자(中)_예수사랑,0
-KCP3509,캔버스캘리말씀액자(中)_나의힘이,0
-KCP5501,캔버스아트말씀액자(大)_피아노/오렌지,0
-KCP5502,캔버스아트말씀액자(大)_사랑이풍성/그린,0
-KCP5503,캔버스아트말씀액자(大)_집/핑크,0
-KCP5504,캔버스캘리말씀액자(大)_여호와는,0
-KCP5505,캔버스캘리말씀액자(大)_사랑/수채화꽃,0
-KCP5506,캔버스캘리말씀액자(大)_예수동행,0
-KCP5507,캔버스캘리말씀액자(大)_옥합을깨뜨려,0
-KCP5508,캔버스캘리말씀액자(大)_예수사랑,0
-KCP5509,캔버스캘리말씀액자(大)_나의힘이,0
-KCP23001,캔버스아트캘리액자_기쁨,0
-KCP23002,캔버스아트캘리액자_생명,0
-KCP25001,캔버스캘리액자(小)_나는 항상,0
-KCP25002,캔버스캘리액자(小)_나의힘이신,0
-KCP25003,캔버스캘리액자(小)_너희는여호와의,0
-KCP25004,캔버스캘리액자(小)ㅡ여호와는나의,0
-KCP25005,캔버스캘리액자(小)_여호와를바라는,0
-KCP25006,캔버스캘리액자(小)_주의말씀은,0
-KCP35001,캔버스캘리액자(中)_나는 항상,0
-KCP35002,캔버스캘리액자(中)_나의힘이신,0
-KCP35003,캔버스캘리액자(中)_너희는여호와의,0
-KCP35005,캔버스캘리액자(中)_여호와를바라는,0
-KCP35006,캔버스캘리액자(中)_주의말씀은,0
-KCP50001,캔버스아트캘리액자_기도,0
-KCP50002,캔버스아트캘리액자_믿음,0
-KCP54001,수채화캔버스아트액자_깊은데로,0
-KCP54002,수채화캔버스아트액자_행복,0
-KCP54003,수채화캔버스아트액자_여호와는 능력,0
-KCP55001,캔버스캘리액자(大)_나는 항상,0
-KCP55002,캔버스캘리액자(大)_나의힘이신,0
-KCP55003,캔버스캘리액자(大)_너희는여호와의,0
-KCP55005,캔버스캘리액자(大)_여호와를바라는,0
-KCP55006,캔버스캘리액자(大)_주의말씀은,0
-KCP55010,캔버스아트캘리액자_예수,0
-KCP55011,캔버스아트캘리액자_은혜,0
-KCP70010,캔버스아트캘리액자_예수,0
-KCP70011,캔버스아트캘리액자_은혜,0
-KCP85001,캔버스수채화말씀액자-깊은데로가서,0
-KCP145001,캔버스수채화말씀액자-산상수훈,0
-[엽서류]
-PS15006,5000엽서세트_축복의동산,0
-PS15007,5000엽서세트_예수사랑,0
-PC50001,5000엽서_예수사랑/가나혼인잔치,0
-PC50002,5000엽서_예수사랑/우물가여인,0
-PC50003,5000엽서_예수사랑/153물고기,0
-PC50004,5000엽서_예수사랑/산상수훈,0
-PC50005,5000엽서_예수사랑/주의옷자락만지며,0
-PC50006,5000엽서_예수사랑/오병이어,0
-PC50007,5000엽서_예수사랑/삭개오,0
-PC50008,5000엽서_예수사랑/옥합을깨뜨려,0
-PC50009,5000엽서_예수사랑/나귀타신예수님,0
-PC50010,5000엽서_예수사랑/너와항상함께,0
-PC50011,5000엽서_축복의동산/너는복이될지라,0
-PC50012,5000엽서_축복의동산/사랑하는자여,0
-PC50013,5000엽서_축복의동산/아무것도,0
-PC50014,5000엽서_축복의동산/아침에주께서,0
-PC50015,5000엽서_축복의동산/여호와는나의,0
-PC50016,5000엽서_축복의동산/여호와는네게,0
-PC50017,5000엽서_축복의동산/평강의복을,0
-PC50018,5000엽서_축복의동산/하나님은사랑,0
-PC50019,5000엽서_축복의동산/하늘의보고,0
-PC50020,5000엽서_축복의동산/항상기뻐하라,0
-PS15003,2000엽서세트_예수사랑,0
-PS15004,2000엽서세트_축복의동산,0
-PS15001,1500엽서세트_믿음/소망/사랑,0
-PS15002,1500엽서세트_축복의동산,0
-PC20001,200엽서_예수사랑/1.가나혼인잔치,0
-PC20002,200엽서_예수사랑/2.우물가여인,0
-PC20003,200엽서_예수사랑/3.153물고기,0
-PC20004,200엽서_예수사랑/4.산상수훈,0
-PC20005,200엽서_예수사랑/5.주의옷자락만지며,0
-PC20006,200엽서_예수사랑/6.오병이어,0
-PC20007,200엽서_예수사랑/7.삭개오,0
-PC20008,200엽서_예수사랑/8.옥합을깨뜨려,0
-PC20009,200엽서_예수사랑/9.나귀타신예수님,0
-PC20010,200엽서_예수사랑/10.너와항상함께,0
-PC20011,200엽서_축복의동산/너는복이될지라,0
-PC20012,200엽서_축복의동산/사랑하는자여,0
-PC20013,200엽서_축복의동산/아무것도,0
-PC20014,200엽서_축복의동산/아침에주께서,0
-PC20015,200엽서_축복의동산/여호와는나의,0
-PC20016,200엽서_축복의동산/여호와는네게,0
-PC20017,200엽서_축복의동산/평강의복을,0
-PC20018,200엽서_축복의동산/하나님은사랑,0
-PC20019,200엽서_축복의동산/하늘의보고를,0
-PC20020,200엽서_축복의동산/항상기뻐하라,0
-PC20021,200엽서_말씀/1.기도,0
-PC20022,200엽서_말씀/2.기쁨,0
-PC20023,200엽서_말씀/3.사랑,0
-PC20024,200엽서_말씀/4.새힘,0
-PC20025,200엽서_말씀/5.소망,0
-PC20026,200엽서_말씀/6.은혜,0
-PC20027,200엽서_말씀/7.지혜,0
-PC20028,200엽서_말씀/8.찬양,0
-PC20029,200엽서_말씀/9.축복,0
-PC20030,200엽서_말씀/10.행복,0
-PC15007,150엽서_사랑/음악,0
-PC15008,150엽서_사랑/겸손,0
-PC15009,150엽서_사랑/참지혜,0
-PC15010,150엽서_사랑/덮어줌,0
-PC15011,150엽서_내게복에복을,0
-PC15012,150엽서_여호와는네게,0
-PC15013,150엽서_여호와의집에,0
-PC15014,150엽서_내가너와함께,0
-PC15015,150엽서_주께서종의집에,0
-PC15016,150엽서_내가노래로,0
-PC15021,150엽서_축복의동산/너는복이될지라,0
-PC15022,150엽서_축복의동산/사랑하는자여,0
-PC15023,150엽서_축복의동산/아무것도,0
-PC15024,150엽서_축복의동산/아침에주께서,0
-PC15025,150엽서_축복의동산/여호와는나의,0
-PC15026,150엽서_축복의동산/여호와는네게,0
-PC15027,150엽서_축복의동산/평강의복을,0
-PC15028,150엽서_축복의동산/하나님은사랑,0
-PC15029,150엽서_축복의동산/하늘의보고를,0
-PC15030,150엽서_축복의동산/항상기뻐하라,0
-[카드류]
-NKC0801,800카드_초대합니다,0
-NKC0802,800카드_당신은/나무,0
-NKC0803,800카드_사랑하는자여,0
-NKC0804,800카드_HappyBirthday,0
-NKC0805,800카드_환영합니다,0
-NKC0806,800카드_축복합니다,0
-NKC0807,800카드_생일축하/케잌,0
-NKC0808,800카드_초청합니다,0
-NKC0809,800카드_나는존귀한자라,0
-NKC08001,800카드_감사합니다/과일(자수),0
-NKC08002,800카드_사랑합니다/새(자수),0
-NKC08003,800카드_축하합니다/새,0
-NKC08004,800카드_생일을축하합니다/피아노,0
-NKC08005,800카드_사랑하는자여/흰꽃,0
-NKC08006,800카드_당신은사랑받기/새하트,0
-NKC08007,800카드_시냇가에심은나무/사다리,0
-NKC08008,800카드_평강의복을/화분꽃,0
-NKC08009,800카드_하나님은사랑이시라/물고기,0
-NKC8010,800카드_당신은/꽃,0
-NKC08010,800카드_감사합니다/과일바구니,0
-NKC8011,800카드_사랑합니다,0
-NKC08011,800카드_축복합니다/꽃병,0
-NKC8012,800카드_감사합니다,0
-NKC08012,800카드_생일을축하합니다/튤립,0
-NKC926,900카드_(꽃)축복/해바라기,0
-NKC927,900카드_(꽃)감사/물망초,0
-NKC928,900카드_(꽃)축하/백합,0
-NKC929,900카드_(꽃)생일/제비,0
-NKC930,900카드_(꽃)당신은/들국화,0
-NKC931,900카드_(꽃)축하/양귀비,0
-NKC932,900카드_(꽃)사약/장미,0
-NKC933,900카드_(꽃)초청/집,0
-NKC934,900카드_(꽃)생일/튤립,0
-NKC935,900카드_(캘리)내가반드시,0
-NKC936,900카드_(캘리)그가하는모든일이,0
-NKC937,900카드_(캘리)너는물댄동산,0
-NKC938,900카드_(캘리)네이름을창대하게,0
-NKC939,900카드_(캘리)당신은사랑받기,0
-NKC940,900카드_(캘리)사랑하는자여,0
-NKC941,900카드_(캘리)주의손으로나를,0
-NKC942,900카드_(캘리)하늘의아름다운,0
-NKC943,900카드_사랑하는자여/요삼1:2,0
-NKC944,900카드_축복합니다/습3:17,0
-NKC945,900카드_평강의주께서/시14:27,0
-NKC946,900카드_생일을축하합니다/민6:24-25,0
-NKC947,900카드_감사합니다/빌4:19,0
-NKC948,900카드_축하합니다/빌1:6,0
-NKC1807,1800_thnakyoucard_set,0
-NKC1001,1000카드_축하/오병이어,0
-NKC1002,1000카드_축하/교회,의자,0
-NKC1003,1000카드_축복합니다,0
-NKC1004,1000카드_생일축하/바이올린,0
-NKC1005,1000카드_생신축하,0
-NKC1006,1000카드_사랑깊은약속,0
-NKC1007,1000카드_환영합니다,0
-NKC1008,1000카드_생일축하/나무,새,0
-NKC1009,1000카드_감사합니다,0
-NKC1010,1000카드_초대합니다,0
-NKC1011,1000카드_감사/화분,가방,0
-NKC1012,1000카드_초청/우체통,0
-NKC1013,1000카드_초대/보라의자,0
-NKC1014,1000카드_생신축하/테이블,0
-NKC1015,1000카드_축복/나무,꽃바구니,0
-NKC1016,1000카드_생일축하/토스트,0
-NKC1017,1000플라워캘리카드_감사,0
-NKC1018,1000플라워캘리카드_생신,0
-NKC1019,1000플라워캘리카드_생신/리스,0
-NKC1020,1000플라워캘리카드_생일,0
-NKC1021,1000플라워캘리카드_생일/생일리스,0
-NKC1022,1000플라워캘리카드_초대,0
-NKC1023,1000플라워캘리카드_축복,0
-NKC1024,1000플라워캘리카드_축하,0
-NKC1025,1000플라워캘리카드_환영,0
-NKC1026,1000플라워캘리카드_초청,0
-NKC1801,1000_thank you card_남자,0
-NKC1802,1000_thank you card_여자,0
-NKC1803,1000_thank you card_고맙습니다,0
-NKC1804,1000_thank you card_감사합니다,0
-NKC1805,1000_thank you card_축복합니다,0
-NKC1806,1000_thank you card_사랑합니다,0
-성탄1000-1,성탄1000-1(마굿간),0
-성탄1000-2,성탄1000-2(트리),0
-성탄1000-3,성탄1000-3(그 맑고 환한 밤중에),0
-성탄1000-4,성탄1000-4(성경책),0
-[예배상]
-KW460001,46000액자테이블,0
-KW460002,46000액자테이블_축복의동산,0
-KW400001,40000액자테이블_시편23편,0
-KW400002,40000액자테이블_여호와는네게,0
-KW400003,40000액자테이블_축복의동산,0
-KW400004,40000액자테이블,0
-KW38001,38000예배상_여호와는,0
-KW360001,36000액자테이블_시편23편,0
-KW360002,36000액자테이블_축복의동산,0
-[머그컵]
-KM15901,15900GODBLESS슬림텀블러_블랙,0
-KM15902,15900GODBLESS슬림텀블러_화이트,0
-KM9801,9900휴대용티보틀-기쁨이내맘에/민트,0
-KM9802,9900휴대용티보틀-기쁨이내맘에/연보라,0
-KM8001,8500뚜껑머그_믿음,0
-KM8002,8500뚜껑머그_소망,0
-KM8003,8500뚜껑머그_사랑,0
-KM6001,6500투톤머그_믿음,0
-KM6002,6500투톤머그_소망,0
-KM6003,6500투톤머그_사랑,0
-[교패-명함]
-KN001,기쁨명함_휘라레(200매),0
-KE_01,기쁨아크릴교패 KE_01,0
-KD_01,기쁨교패 KD_01,0
-KB_01,기쁨교패 KB_01,0
-KN002,기쁨명함_누보지(200매),0
-KE_02,기쁨아크릴교패 KE_02,0
-KC_02,기쁨교패 KC_02,0
-KN003,기쁨명함_일반코팅(500매),0
-KE_03,기쁨아크릴교패 KE_03,0
-KN004,기쁨명함_뒷면인쇄추가,0
-KE_04,기쁨아크릴교패 KE_04,0
-KD_04,기쁨교패 KD_04,0
-KN005,기쁨명함_키칼라메탈릭(200매),0
-KE_05,기쁨아크릴교패 KE_05,0
-KE_06,기쁨아크릴교패 KE_06,0
-KD_06,기쁨교패 KD_06,0
-KC_06,기쁨교패 KC_06,0
-KE_07,기쁨아크릴교패 KE_07,0
-KE_08,기쁨아크릴교패 KE_08,0
-KD_08,기쁨교패 KD_08,0
-KE_09,독판아크릴교패,0
-KN010,포인트카드_2000매,0
-KE_10,독판아크릴교패,0
-KE_11,독판아크릴교패(5T),0
-KE_12,아크릴교패,0
-[시계류]
-KC2401,24000시계/원형_예수사랑(와인),0
-KC2201,22000시계/원형_믿음의가정(흰),0
-KC2202,22000시계/원형_하늘의보고를(흰),0
-KC2203,22000시계/원형_하늘의보고를(그린),0
-KC2204,22000시계_독판,0
-KC9501,9500방수흡착시계_항상기뻐하라,0
-KC9502,9500방수흡착시계_예수사랑,0
-KC9503,9500방수흡착시계_행복이가득한,0
-KC9504,9500방수흡착시계_축복이넘치는,0
-KC9505,9500방수흡착시계_여호와는나의목자,0
-KC9506,9500방수흡착시계_사랑하는자여,0
-KC3201,기쁨말씀벽시계_항상기뻐하라,0
-KC3202,기쁨말씀벽시계_예수사랑,0
-KC3203,기쁨말씀벽시계_행복이가득한우리집,0
-KC3204,기쁨말씀벽시계_축복이넘치는우리집,0
-KC3205,기쁨말씀벽시계_여호와는나의목자,0
-KC3206,기쁨말씀벽시계_사랑하는자여,0
-[주보류]
-EJ401,기쁨해외4면주보_401,0
-EJ402,기쁨해외4면주보_402,0
-EJ403,기쁨해외4면주보_403,0
-EJ404,기쁨해외4면주보_404,0
-EJ405,기쁨해외4면주보_405,0
-EJ406,기쁨해외4면주보_406,0
-EJ407,기쁨해외4면주보_407,0
-EJ408,기쁨해외4면주보_408,0
-KJ-421,A4주보(4면)-421,0
-KJ-422,A4주보(4면)-422,0
-KJ-423,A4주보(4면)-423,0
-KJ-424,A4주보(4면)-424,0
-KJ-425,A4주보(4면)-425,0
-KJ-426,A4주보(4면)-426,0
-KJ-427,A4주보(4면)-427,0
-KJ-428,A4주보(4면)-428,0
-[봉투류]
-JO1601,예수사랑헌금봉투_감사,0
-JO1602,예수사랑헌금봉투_다용도,0
-JO1603,예수사랑헌금봉투_십일조,0
-JO1604,예수사랑헌금봉투_주일,0
-JO1605,예수사랑헌금봉투_주정,0
-JO1701,패브릭헌금봉투_감사,0
-JO1702,패브릭헌금봉투_다용도,0
-JO1703,패브릭헌금봉투_십일조,0
-JO1704,패브릭헌금봉투_주일,0
-JO1705,패브릭헌금봉투_주정,0
-JO1706,패브릭헌금봉투_건축,0
-JO1707,패브릭헌금봉투_일천번제,0
-JO3001,헌금봉투_주일,0
-JO3002,헌금봉투_감사,0
-JO3003,헌금봉투_십일조,0
-JO3004,헌금봉투_선교,0
-JO3005,무지개헌금봉투_다용도,0
-JO3006,무지개헌금봉투_일천번제,0
-JO3007,무지개헌금봉투_감사/연두,0
-JO3008,무지개헌금봉투_십일조,0
-JO3009,무지개헌금봉투_건축,0
-JO3010,무지개헌금봉투_주일,0
-JO3011,무지개헌금봉투_감사/보라,0
-JO5001,자수꽃감사,0
-JO5002,자수꽃십일조,0
-JO5003,자수꽃주일,0
-JO5004,자수꽃선교,0
-JO5005,자수꽃다용도,0
-JO5006,자수꽃무지,0
-추수감사01,추수감사_1,0
-연간봉투01,연간헌금봉투_회비,0
-신년감사01,신년감사01,0
-성탄감사01,성탄감사01_빨강,0
-생일감사01,생일감사01_분홍/나무비둘기,0
-부활감사01,부활감사01_백합/노랑,0
-맥추감사01,맥추감사_01,0
-추수감사02,추수감사_2,0
-연간봉투02,연간헌금봉투_주정,0
-신년감사2,신년감사02_교회,0
-성탄감사02,성탄감사02_동방박사,0
-생일감사02,생일감사02_미색/큰비둘기,0
-부활감사02,부활감사02_십자가/파랑,0
-맥추감사02,맥추감사_02,0
-추수감사03,추수감사_3,0
-연간봉투03,연간헌금봉투_십일조,0
-신년감사3,신년감사03_항아리,0
-성탄감사03,성탄감사03_클레이/마굿간,0
-부활감사03,부활감사03_부활의기쁨/노랑,0
-맥추감사03,맥추감사_03,0
-추수감사04,추수감사_4,0
-연간봉투04,연간헌금봉투_선교,0
-성탄감사04,성탄감사04_내가 온백성에게/양,0
-부활감사04,부활감사04_살아나시다/빨강,0
-추수감사05,추수감사_5,0
-연간봉투05,연간헌금봉투_건축,0
-성탄감사05,성탄감사05_그린,0
-부활감사05,부활감사05_생명 기쁨,0
-추수감사06,추수감사_6,0
-연간봉투06,연간헌금봉투_주일,0
-추수감사07,추수감사_7,0
-연간봉투07,연간헌금봉투_헌금,0
-JO2501,마음담은봉투_감사,0
-JO2502,마음담은봉투_고맙,0
-JO2503,마음담은봉투_사랑,0
-JO2504,마음담은봉투_축복,0
-JO2505,마음담은봉투_축하,0
-JO2506,경조사봉투_주님의이름으로축복합니다,0
-JO2507,경조사봉투_결혼을축하합니다,0
-JO2508,경조사봉투_주님의위로와소망이,0
-[용품]
-JSS7501,JSS7501_핸드폰거치대(화이트),0
-JSS7502,JSS7502_핸드폰거치대(블랙),0`;
+let allData = [];
+let currentCategory = '전체';
+let currentMode = 'in';
+let selectedBarcode = null;
 
-    let inventory = [];
-    let currentCatFilter = "전체";
+function updateClock() {
+  const now = new Date();
+  document.getElementById('dateText').textContent = now.toLocaleDateString('ko-KR', {year:'numeric',month:'2-digit',day:'2-digit'});
+  document.getElementById('timeText').textContent = now.toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'});
+}
+updateClock();
+setInterval(updateClock, 1000);
 
-    // 데이터 초기화
-    function init() {
-        let cat = "기타";
-        rawData.split('\n').forEach(line => {
-            line = line.trim();
-            if(!line) return;
-            if(line.startsWith('[')) {
-                cat = line.replace('[','').replace(']','');
-            } else if(line.includes(',')) {
-                const parts = line.split(',');
-                inventory.push({ 
-                    id: parts[0].trim(), 
-                    name: parts[1].trim(), 
-                    stock: parseInt(parts[2]) || 0, 
-                    cat: cat 
-                });
-            }
-        });
-        render(inventory);
+async function loadData() {
+  try {
+    const res = await fetch(`${API}?action=getAll`);
+    const json = await res.json();
+    if (json.status === 'ok') {
+      allData = json.data.map(r => ({
+        barcode: r.barcode,
+        name: r.name,
+        qty: r.qty,
+        category: r.category || '기타'
+      }));
+      render();
     }
+  } catch(e) {
+    document.getElementById('tableWrap').innerHTML = '<div class="empty">⚠️ 데이터 로드 실패<br>네트워크를 확인해주세요</div>';
+  }
+}
 
-    // 신호등 로직
-    function getDotColor(item) {
-        const s = item.stock;
-        if (item.cat.includes('시계')) return s >= 10 ? '#22c55e' : (s < 7 ? '#ef4444' : '#eab308');
-        if (item.cat.includes('주보')) return s >= 15 ? '#22c55e' : (s < 10 ? '#ef4444' : '#eab308');
-        return s >= 10 ? '#22c55e' : (s < 5 ? '#ef4444' : '#eab308');
-    }
+function getCategories() {
+  const cats = ['전체'];
+  const seen = new Set();
+  allData.forEach(d => { if (!seen.has(d.category)) { seen.add(d.category); cats.push(d.category); } });
+  return cats;
+}
 
-    // 화면 그리기
-    function render(data) {
-        const list = document.getElementById('list');
-        list.innerHTML = data.map(item => `
-            <div class="bg-white p-4 flex justify-between items-center transition-all active:bg-slate-50 border-b border-slate-50">
-                <div class="flex-1 pr-4">
-                    <div class="flex items-center gap-1 mb-1">
-                        <span class="status-dot" style="background-color:${getDotColor(item)}"></span>
-                        <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 font-mono rounded tracking-tighter">${item.id}</span>
-                        <span class="text-[10px] text-slate-400 font-medium">${item.cat}</span>
-                    </div>
-                    <span class="text-[15px] font-bold text-slate-800 block truncate">${item.name}</span>
+function render() {
+  updateSummary();
+  renderTabs();
+  renderTable();
+}
+
+function updateSummary() {
+  const filtered = currentCategory === '전체' ? allData : allData.filter(d => d.category === currentCategory);
+  document.getElementById('totalItems').textContent = filtered.length;
+  document.getElementById('totalQty').textContent = filtered.reduce((s,d) => s+d.qty, 0);
+  document.getElementById('dangerItems').textContent = filtered.filter(d => d.qty <= LOW_STOCK).length;
+}
+
+function renderTabs() {
+  const cats = getCategories();
+  document.getElementById('tabsContainer').innerHTML = cats.map(c =>
+    `<button class="tab ${c===currentCategory?'active':''}" onclick="setCategory('${c}')">${c}</button>`
+  ).join('');
+}
+
+function setCategory(cat) {
+  currentCategory = cat;
+  render();
+}
+
+function filterProducts() { renderTable(); }
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let data = currentCategory === '전체' ? allData : allData.filter(d => d.category === currentCategory);
+  if (q) data = data.filter(d => d.barcode.toLowerCase().includes(q) || d.name.toLowerCase().includes(q));
+
+  const groups = {};
+  data.forEach(d => {
+    if (!groups[d.category]) groups[d.category] = [];
+    groups[d.category].push(d);
+  });
+
+  if (data.length === 0) {
+    document.getElementById('tableWrap').innerHTML = '<div class="empty">🔍 검색 결과가 없습니다</div>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(groups).forEach(([cat, items]) => {
+    const dangerCount = items.filter(i => i.qty <= LOW_STOCK).length;
+    html += `
+    <div class="category-block">
+      <div class="cat-header" onclick="toggleCat('cat_${cat}', this)">
+        <div class="cat-header-left">
+          <span class="cat-name">${cat}</span>
+          <span class="cat-count">${items.length}종</span>
+          ${dangerCount > 0 ? `<span class="cat-danger">🔴 ${dangerCount}</span>` : ''}
+        </div>
+        <span class="cat-arrow open">▲</span>
+      </div>
+      <div class="table-container" id="cat_${cat}">
+        <table>
+          <thead><tr><th>상태</th><th>바코드</th><th>제품명</th><th>재고</th><th>조작</th></tr></thead>
+          <tbody>
+            ${items.map(item => `
+            <tr>
+              <td><span class="status-dot ${item.qty > LOW_STOCK ? 'ok' : 'low'}"></span></td>
+              <td class="td-barcode">${item.barcode}</td>
+              <td class="td-name">${item.name}</td>
+              <td class="td-qty ${item.qty > LOW_STOCK ? 'ok' : 'low'}">${item.qty}</td>
+              <td>
+                <div class="ctrl">
+                  <button class="ctrl-btn plus" onclick="quickUpdate('${item.barcode}', 1)">+</button>
+                  <button class="ctrl-btn minus" onclick="quickUpdate('${item.barcode}', -1)">-</button>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button class="w-10 h-10 border border-slate-200 rounded-xl text-slate-300 font-bold">-</button>
-                    <span class="w-6 text-center text-xl font-black ${item.stock < 5 ? 'text-red-500' : 'text-teal-500'}">${item.stock}</span>
-                    <button class="w-10 h-10 border border-slate-200 rounded-xl text-teal-500 font-bold">+</button>
-                </div>
-            </div>
-        `).join('');
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+  document.getElementById('tableWrap').innerHTML = html;
+}
 
-        // 상단 통계 업데이트
-        document.getElementById('count-ui').innerText = inventory.length;
-        document.getElementById('total-ui').innerText = inventory.reduce((a,b)=>a+b.stock, 0).toLocaleString();
-        document.getElementById('risk-ui').innerText = inventory.filter(i => {
-            if(i.cat.includes('시계')) return i.stock < 7;
-            if(i.cat.includes('주보')) return i.stock < 10;
-            return i.stock < 5;
-        }).length;
-    }
+function toggleCat(id, header) {
+  const el = document.getElementById(id);
+  const arrow = header.querySelector('.cat-arrow');
+  if (el.style.display === 'none') { el.style.display = ''; arrow.classList.add('open'); }
+  else { el.style.display = 'none'; arrow.classList.remove('open'); }
+}
 
-    // 🔄 실시간 재고 동기화 함수
-    async function fetchLiveStock() {
-        if(!SCRIPT_URL || SCRIPT_URL.includes("여기에")) {
-            alert("⚠️ 코드 내 SCRIPT_URL에 구글 앱스 스크립트 주소를 먼저 넣어주세요!");
-            return;
-        }
-        
-        document.getElementById('loading').style.display = 'flex';
-        
-        try {
-            console.log("연결 시도 URL:", SCRIPT_URL);
-            const res = await fetch(SCRIPT_URL);
-            
-            if (!res.ok) throw new Error('구글 서버 응답 실패 (상태코드: ' + res.status + ')');
-            
-            const live = await res.json();
-            console.log("시트 데이터 수신 완료:", live);
+async function quickUpdate(barcode, change) {
+  const item = allData.find(d => d.barcode === barcode);
+  if (!item) return;
+  const newQty = Math.max(0, item.qty + change);
+  await updateServer(barcode, newQty);
+  item.qty = newQty;
+  render();
+  showToast(`${item.name.substring(0,10)}... ${change > 0 ? '+' : ''}${change} 처리완료`);
+}
 
-            if (live.error) throw new Error('시트 내부 오류: ' + live.error);
+async function updateServer(barcode, qty) {
+  try {
+    await fetch(`${API}?action=update&barcode=${encodeURIComponent(barcode)}&qty=${qty}`);
+  } catch(e) { showToast('⚠️ 서버 연결 오류'); }
+}
 
-            // 데이터 매칭
-            let matchCount = 0;
-            inventory.forEach(i => {
-                const found = live.find(l => {
-                    const sheetBarcode = String(l['바코드'] || l['ID'] || l['code']).trim();
-                    return sheetBarcode === String(i.id).trim();
-                });
-                
-                if(found) {
-                    const sheetStock = parseInt(found['재고'] || found['재고수량'] || found['수량']) || 0;
-                    i.stock = sheetStock;
-                    matchCount++;
-                }
-            });
-            
-            render(inventory);
-            alert("✅ 동기화 완료!\n시트에서 " + matchCount + "개의 품목 수량을 가져왔습니다.");
-            
-        } catch(e) { 
-            console.error("상세 에러 내용:", e);
-            alert("❌ 로딩 실패!\n\n[이유]\n" + e.message + "\n\n[체크사항]\n1. 시트 1행에 '바코드', '재고' 제목이 있나요?\n2. 구글 스크립트 배포 시 '모든 사용자'로 설정했나요?"); 
-        } finally {
-            document.getElementById('loading').style.display = 'none';
-        }
-    }
+function openModal(mode) {
+  currentMode = mode;
+  selectedBarcode = null;
+  document.getElementById('modalTitle').textContent = mode === 'in' ? '⬇️ 입고 처리' : '⬆️ 출고 처리';
+  document.getElementById('modalConfirm').className = `modal-confirm ${mode}`;
+  document.getElementById('modalConfirm').textContent = mode === 'in' ? '입고 확인' : '출고 확인';
+  document.getElementById('modalSearch').value = '';
+  document.getElementById('qtyInput').value = 1;
+  document.getElementById('modalOverlay').classList.add('show');
+  filterModalItems();
+}
 
-    // 카테고리 필터링
-    function filterCat(c) {
-        currentCatFilter = c;
-        document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.innerText === c));
-        const filtered = c === '전체' ? inventory : inventory.filter(i => i.cat.includes(c));
-        render(filtered);
-    }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 
-    // 검색 핸들러
-    function handleSearch() {
-        const q = document.getElementById('search').value.toLowerCase();
-        const filtered = (currentCatFilter === '전체' ? inventory : inventory.filter(i => i.cat.includes(currentCatFilter)))
-                        .filter(i => i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q));
-        render(filtered);
-    }
+function filterModalItems() {
+  const q = document.getElementById('modalSearch').value.toLowerCase();
+  const data = q ? allData.filter(d => d.barcode.toLowerCase().includes(q) || d.name.toLowerCase().includes(q)) : allData.slice(0, 20);
+  document.getElementById('modalResult').innerHTML = data.map(d => `
+    <div class="modal-item ${selectedBarcode===d.barcode?'selected':''}" onclick="selectItem('${d.barcode}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="mi-name">${d.name}</div>
+          <div class="mi-bar">${d.barcode}</div>
+        </div>
+        <div class="mi-qty">재고 ${d.qty}</div>
+      </div>
+    </div>`).join('');
+}
 
-    // 앱 시작
-    init();
+function selectItem(barcode) {
+  selectedBarcode = barcode;
+  filterModalItems();
+}
+
+async function confirmInOut() {
+  if (!selectedBarcode) { showToast('제품을 선택해주세요'); return; }
+  const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+  const change = currentMode === 'in' ? qty : -qty;
+  const item = allData.find(d => d.barcode === selectedBarcode);
+  if (!item) return;
+  const newQty = Math.max(0, item.qty + change);
+  await updateServer(selectedBarcode, newQty);
+  item.qty = newQty;
+  closeModal();
+  render();
+  showToast(`${currentMode === 'in' ? '입고' : '출고'} ${qty}개 처리완료 ✅`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadData();
+setInterval(loadData, 30000);
 </script>
 </body>
 </html>
-
